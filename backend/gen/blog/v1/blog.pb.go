@@ -28,7 +28,9 @@ type User struct {
 	Id       string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Username string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	// RFC 3339 timestamp.
-	CreatedAt     string `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt string `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// is_prime marks the owner, who is allowed to create other accounts.
+	IsPrime       bool `protobuf:"varint,4,opt,name=is_prime,json=isPrime,proto3" json:"is_prime,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -82,6 +84,13 @@ func (x *User) GetCreatedAt() string {
 		return x.CreatedAt
 	}
 	return ""
+}
+
+func (x *User) GetIsPrime() bool {
+	if x != nil {
+		return x.IsPrime
+	}
+	return false
 }
 
 // Post is a single blog entry authored by a User.
@@ -648,12 +657,13 @@ var File_blog_v1_blog_proto protoreflect.FileDescriptor
 
 const file_blog_v1_blog_proto_rawDesc = "" +
 	"\n" +
-	"\x12blog/v1/blog.proto\x12\ablog.v1\x1a\x1cgoogle/api/annotations.proto\"Q\n" +
+	"\x12blog/v1/blog.proto\x12\ablog.v1\x1a\x1cgoogle/api/annotations.proto\"l\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x03 \x01(\tR\tcreatedAt\"\x9a\x01\n" +
+	"created_at\x18\x03 \x01(\tR\tcreatedAt\x12\x19\n" +
+	"\bis_prime\x18\x04 \x01(\bR\aisPrime\"\x9a\x01\n" +
 	"\x04Post\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1a\n" +

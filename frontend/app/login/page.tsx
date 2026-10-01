@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -61,13 +60,6 @@ export default function LoginPage() {
           {loading ? "Logging in…" : "Continue"}
         </button>
       </form>
-
-      <div className="auth__footer">
-        <span>Don&apos;t have an account?</span>
-        <Link href="/signup" className="btn btn--pill-blue">
-          Sign Up
-        </Link>
-      </div>
     </main>
   );
 }

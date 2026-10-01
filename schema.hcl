@@ -14,6 +14,11 @@ table "users" {
     type = text
     null = false
   }
+  column "is_prime" {
+    type    = boolean
+    null    = false
+    default = false
+  }
   column "created_at" {
     type = timestamptz
     null = false

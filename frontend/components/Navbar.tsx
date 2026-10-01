@@ -33,6 +33,11 @@ export function Navbar() {
           </Link>
           {mounted && session ? (
             <>
+              {session.user.isPrime && (
+                <Link href="/new-user" className="navbar__link">
+                  New user
+                </Link>
+              )}
               <Link href="/new" className="navbar__link">
                 New post
               </Link>
@@ -44,14 +49,9 @@ export function Navbar() {
               </button>
             </>
           ) : (
-            <>
-              <Link href="/login" className="navbar__link">
-                Login
-              </Link>
-              <Link href="/signup" className="btn btn--pill-blue" style={{ padding: "6px 16px" }}>
-                Sign up
-              </Link>
-            </>
+            <Link href="/login" className="navbar__link">
+              Login
+            </Link>
           )}
         </nav>
       </div>

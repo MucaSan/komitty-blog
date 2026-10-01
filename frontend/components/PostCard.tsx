@@ -4,21 +4,26 @@ import type { Post } from "@/lib/types";
 export function PostCard({ post }: { post: Post }) {
   const date = new Date(post.createdAt).toLocaleDateString(undefined, {
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
   });
 
   return (
-    <article className="post-card">
-      <h3 className="post-card__title">{post.title}</h3>
-      <p className="post-card__excerpt">{post.content}</p>
-      <div className="post-card__meta">
-        <Link href={`/u/${post.username}`} className="post-card__author">
+    <article className="post-entry">
+      <h2 className="post-entry__title">
+        <Link href={`/u/${post.username}/${post.id}`}>{post.title}</Link>
+      </h2>
+      <div className="post-entry__meta">
+        <Link href={`/u/${post.username}`} className="post-entry__author">
           @{post.username}
         </Link>
         <span>·</span>
-        <span>{date}</span>
+        <time>{date}</time>
       </div>
+      <p className="post-entry__excerpt">{post.content}</p>
+      <Link href={`/u/${post.username}/${post.id}`} className="post-entry__more">
+        Read more →
+      </Link>
     </article>
   );
 }

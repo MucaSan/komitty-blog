@@ -31,8 +31,21 @@ func New(pool *pgxpool.Pool, jwtSecret string) *Service {
 	return &Service{pool: pool, jwtSecret: jwtSecret}
 }
 
-// CreateUser registers a new account.
+// CreateUser registers a new account. Only the prime user may create accounts.
 func (s *Service) CreateUser(ctx context.Context, req *blogv1.CreateUserRequest) (*blogv1.CreateUserResponse, error) {
+	claims, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	prime, err := s.isPrime(ctx, claims.Subject)
+	if err != nil {
+		return nil, err
+	}
+	if !prime {
+		return nil, status.Error(codes.PermissionDenied, "only the prime user can create accounts")
+	}
+
 	username := strings.TrimSpace(req.GetUsername())
 	if err := validateUsername(username); err != nil {
 		return nil, err
@@ -79,10 +92,11 @@ func (s *Service) Login(ctx context.Context, req *blogv1.LoginRequest) (*blogv1.
 		id           string
 		passwordHash string
 		createdAt    time.Time
+		isPrime      bool
 	)
 	err := s.pool.QueryRow(ctx,
-		`SELECT id, password_hash, created_at FROM users WHERE username = $1`, username,
-	).Scan(&id, &passwordHash, &createdAt)
+		`SELECT id, password_hash, created_at, is_prime FROM users WHERE username = $1`, username,
+	).Scan(&id, &passwordHash, &createdAt, &isPrime)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, status.Error(codes.Unauthenticated, "invalid username or password")
 	}
@@ -100,7 +114,7 @@ func (s *Service) Login(ctx context.Context, req *blogv1.LoginRequest) (*blogv1.
 	}
 
 	return &blogv1.LoginResponse{
-		User:  &blogv1.User{Id: id, Username: username, CreatedAt: createdAt.UTC().Format(time.RFC3339)},
+		User:  &blogv1.User{Id: id, Username: username, CreatedAt: createdAt.UTC().Format(time.RFC3339), IsPrime: isPrime},
 		Token: token,
 	}, nil
 }
@@ -189,6 +203,16 @@ func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRe
 	}
 
 	return &blogv1.ListUserPostsResponse{Posts: posts}, nil
+}
+
+// isPrime reports whether the user with the given id is the prime user.
+func (s *Service) isPrime(ctx context.Context, userID string) (bool, error) {
+	var prime bool
+	err := s.pool.QueryRow(ctx, `SELECT is_prime FROM users WHERE id = $1`, userID).Scan(&prime)
+	if err != nil {
+		return false, status.Errorf(codes.Internal, "failed to check authorization: %v", err)
+	}
+	return prime, nil
 }
 
 // authenticate extracts and validates the bearer token from gRPC metadata.

@@ -5,6 +5,7 @@ export interface User {
   id: string;
   username: string;
   createdAt: string;
+  isPrime: boolean;
 }
 
 export interface Post {

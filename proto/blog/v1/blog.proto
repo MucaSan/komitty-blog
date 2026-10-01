@@ -12,6 +12,8 @@ message User {
   string username = 2;
   // RFC 3339 timestamp.
   string created_at = 3;
+  // is_prime marks the owner, who is allowed to create other accounts.
+  bool is_prime = 4;
 }
 
 // Post is a single blog entry authored by a User.

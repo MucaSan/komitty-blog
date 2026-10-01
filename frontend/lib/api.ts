@@ -72,10 +72,15 @@ export async function listUserPosts(username: string): Promise<Post[]> {
   }
 }
 
-export async function createUser(username: string, password: string): Promise<Session> {
+export async function createUser(
+  username: string,
+  password: string,
+  session: Session,
+): Promise<Session> {
   try {
     const data = await request<{ user: User; token: string }>("/v1/users", {
       method: "POST",
+      headers: { Authorization: `Bearer ${session.token}` },
       body: JSON.stringify({ username, password }),
     });
     return { user: data.user, token: data.token };

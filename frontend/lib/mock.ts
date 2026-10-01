@@ -12,9 +12,9 @@ const USERS_KEY = "komitty_mock_users";
 const POSTS_KEY = "komitty_mock_posts";
 
 const SEED_USERS: StoredUser[] = [
-  { id: "u-ada", username: "ada", password: "password1", createdAt: "2026-09-01T10:00:00Z" },
-  { id: "u-alan", username: "alan", password: "password1", createdAt: "2026-09-02T10:00:00Z" },
-  { id: "u-emmy", username: "emmy", password: "password1", createdAt: "2026-09-03T10:00:00Z" },
+  { id: "u-ada", username: "ada", password: "password1", createdAt: "2026-09-01T10:00:00Z", isPrime: true },
+  { id: "u-alan", username: "alan", password: "password1", createdAt: "2026-09-02T10:00:00Z", isPrime: false },
+  { id: "u-emmy", username: "emmy", password: "password1", createdAt: "2026-09-03T10:00:00Z", isPrime: false },
 ];
 
 const SEED_POSTS: Post[] = [
@@ -105,6 +105,7 @@ export function createUser(username: string, password: string): Session {
     username,
     password,
     createdAt: new Date().toISOString(),
+    isPrime: false,
   };
   users.push(stored);
   writeJSON(USERS_KEY, users);

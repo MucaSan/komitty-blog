@@ -45,7 +45,7 @@ komitty-blog/
 
 | Feature | Endpoint | RPC |
 | --- | --- | --- |
-| Create account (username, password, repeat password) | `POST /v1/users` | `CreateUser` |
+| Create account (prime user only) | `POST /v1/users` | `CreateUser` |
 | Log in | `POST /v1/login` | `Login` |
 | Create a post | `POST /v1/posts` | `CreatePost` |
 | Browse all posts | `GET /v1/posts` | `ListPosts` |
@@ -119,3 +119,6 @@ make frontend-build    # npm run build
 - The Go module path is `github.com/MucaSan/komitty-blog/backend`. Adjust if the
   repository ends up under a different owner/remote.
 - Passwords are hashed with bcrypt; JWTs use HS256 with `JWT_SECRET`.
+- Account creation is restricted to the **prime user** (`is_prime = true`); the
+  frontend exposes it via the "New user" page, visible only to that user.
+- Production is served at `blog.komitty.com` (see `deploy/nginx/komitty.conf`).
