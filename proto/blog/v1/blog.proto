@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package blog.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/MucaSan/komitty-blog/backend/gen/blog/v1;blogv1";
+
+// User is a blog author.
+message User {
+  string id = 1;
+  string username = 2;
+  // RFC 3339 timestamp.
+  string created_at = 3;
+}
+
+// Post is a single blog entry authored by a User.
+message Post {
+  string id = 1;
+  string user_id = 2;
+  // Denormalized author username so callers can render without a join.
+  string username = 3;
+  string title = 4;
+  string content = 5;
+  // RFC 3339 timestamp.
+  string created_at = 6;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message CreateUserResponse {
+  User user = 1;
+  // Session token to use as the Authorization bearer for CreatePost.
+  string token = 2;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  User user = 1;
+  string token = 2;
+}
+
+message CreatePostRequest {
+  string title = 1;
+  string content = 2;
+}
+
+message CreatePostResponse {
+  Post post = 1;
+}
+
+message ListPostsRequest {}
+
+message ListPostsResponse {
+  repeated Post posts = 1;
+}
+
+message ListUserPostsRequest {
+  string username = 1;
+}
+
+message ListUserPostsResponse {
+  repeated Post posts = 1;
+}
+
+service BlogService {
+  // CreateUser registers a new account.
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "*"
+    };
+  }
+
+  // Login authenticates an existing account.
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/login"
+      body: "*"
+    };
+  }
+
+  // CreatePost publishes a new post (requires Authorization bearer token).
+  rpc CreatePost(CreatePostRequest) returns (CreatePostResponse) {
+    option (google.api.http) = {
+      post: "/v1/posts"
+      body: "*"
+    };
+  }
+
+  // ListPosts returns all posts, newest first.
+  rpc ListPosts(ListPostsRequest) returns (ListPostsResponse) {
+    option (google.api.http) = {
+      get: "/v1/posts"
+    };
+  }
+
+  // ListUserPosts returns the posts of a single user, newest first.
+  rpc ListUserPosts(ListUserPostsRequest) returns (ListUserPostsResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/{username}/posts"
+    };
+  }
+}

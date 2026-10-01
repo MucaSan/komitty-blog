@@ -1,0 +1,16 @@
+version: v2
+plugins:
+  # Go message types
+  - remote: buf.build/protocolbuffers/go
+    out: backend/gen
+    opt: paths=source_relative
+  # Go gRPC server/client stubs
+  - remote: buf.build/grpc/go
+    out: backend/gen
+    opt: paths=source_relative
+  # grpc-gateway (REST/JSON) HTTP handlers
+  - remote: buf.build/grpc-ecosystem/gateway
+    out: backend/gen
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
