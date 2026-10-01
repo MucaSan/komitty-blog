@@ -34,6 +34,10 @@ body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -502,12 +506,17 @@ a {
 /* ------------------------------------------------------------------ */
 /* Post detail                                                         */
 /* ------------------------------------------------------------------ */
+.container--post {
+  max-width: 1040px;
+}
 .post {
-  max-width: 680px;
   margin: 40px auto;
 }
+.post__header {
+  margin-bottom: 28px;
+}
 .post__title {
-  font-size: 34px;
+  font-size: 38px;
   font-weight: 800;
   line-height: 1.2;
   margin: 0 0 12px;
@@ -518,14 +527,77 @@ a {
   gap: 8px;
   font-size: 14px;
   color: var(--text-muted);
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 28px;
+}
+.post__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 48px;
+  align-items: start;
+}
+.post__content h1,
+.post__content h2,
+.post__content h3 {
+  scroll-margin-top: 84px;
+}
+
+/* Table of contents */
+.toc {
+  position: sticky;
+  top: 84px;
+  padding-left: 20px;
+  border-left: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.toc__title {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.toc__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.toc__item a {
+  display: block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  line-height: 1.4;
+  transition: color 120ms ease, background 120ms ease;
+}
+.toc__item a:hover {
+  color: var(--text);
+}
+.toc__item--level-3 a {
+  padding-left: 22px;
+  font-size: 12px;
+}
+.toc__item--active a {
+  color: var(--primary);
+  background: rgba(7, 143, 228, 0.12);
+}
+
+@media (max-width: 900px) {
+  .post__body {
+    grid-template-columns: 1fr;
+  }
+  .toc {
+    display: none;
+  }
 }
 .post__content {
   font-size: 17px;
   line-height: 1.75;
   color: #e8e8ea;
+  min-width: 0;
 }
 .post__content > *:first-child {
   margin-top: 0;
