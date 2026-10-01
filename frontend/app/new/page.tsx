@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { createPost } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
@@ -13,6 +14,7 @@ export default function NewPostPage() {
   const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isEmpty, setIsEmpty] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +30,7 @@ export default function NewPostPage() {
     setLoading(true);
     try {
       const post = await createPost(title, content, session);
-      router.push(`/u/${post.username}`);
+      router.push(`/u/${post.username}/${post.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -50,6 +52,8 @@ export default function NewPostPage() {
     );
   }
 
+  const canPublish = title.trim().length > 0 && !isEmpty;
+
   return (
     <main className="container">
       <div className="editor">
@@ -58,27 +62,24 @@ export default function NewPostPage() {
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: 12 }}
         >
-          <div className="field">
-            <input
-              className="field__input"
-              placeholder="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <textarea
-              className="field__input field__input--textarea"
-              placeholder="Write about your achievement…"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
-          </div>
+          <input
+            className="editor__title-input"
+            placeholder="Post title…"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autoComplete="off"
+          />
+          <RichTextEditor
+            onChange={(json, empty) => {
+              setContent(json);
+              setIsEmpty(empty);
+            }}
+          />
           <div className="auth__error">{error}</div>
           <button
             className="btn btn--primary"
             type="submit"
-            disabled={loading}
+            disabled={loading || !canPublish}
             style={{ alignSelf: "flex-start" }}
           >
             {loading ? "Publishing…" : "Publish"}

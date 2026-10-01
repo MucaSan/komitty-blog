@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { listUserPosts } from "@/lib/api";
+import { contentToHtml } from "@/lib/content";
 import type { Post } from "@/lib/types";
 
 export default function PostPage() {
@@ -55,7 +56,10 @@ export default function PostPage() {
           <span>·</span>
           <time>{date}</time>
         </div>
-        <div className="post__content">{post.content}</div>
+        <div
+          className="post__content"
+          dangerouslySetInnerHTML={{ __html: contentToHtml(post.content) }}
+        />
       </article>
     </main>
   );

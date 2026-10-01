@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { contentToText } from "@/lib/content";
 import type { Post } from "@/lib/types";
 
 export function PostCard({ post }: { post: Post }) {
@@ -20,7 +21,7 @@ export function PostCard({ post }: { post: Post }) {
         <span>·</span>
         <time>{date}</time>
       </div>
-      <p className="post-entry__excerpt">{post.content}</p>
+      <p className="post-entry__excerpt">{contentToText(post.content)}</p>
       <Link href={`/u/${post.username}/${post.id}`} className="post-entry__more">
         Read more →
       </Link>
