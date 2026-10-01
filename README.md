@@ -90,8 +90,9 @@ cd backend
 go run ./cmd/server    # gRPC :50051 + HTTP gateway :8080
 ```
 
-The frontend points at `http://localhost:8080` by default
-(`NEXT_PUBLIC_API_URL` in the frontend).
+The frontend calls same-origin `/v1/*` in production (nginx proxies to the
+backend). For local dev, set `NEXT_PUBLIC_API_URL=http://localhost:8080` in
+`frontend/.env.local`.
 
 ## Regenerating code from `.proto`
 

@@ -8,7 +8,10 @@
 import type { Post, Session, User } from "./types";
 import * as mock from "./mock";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// Empty string means "same origin" — in production nginx proxies /v1/* to the
+// backend, so relative requests hit the same domain. For local development,
+// set NEXT_PUBLIC_API_URL=http://localhost:8080 in frontend/.env.local.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export class ApiError extends Error {
   status: number;
