@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { PostCard } from "@/components/PostCard";
 import { listPosts } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, onSessionChange } from "@/lib/session";
 import type { Post, Session } from "@/lib/types";
 
 export default function HomePage() {
@@ -19,8 +19,10 @@ export default function HomePage() {
       .then(setPosts)
       .catch(() => setPosts([]))
       .finally(() => setLoading(false));
-    setSession(getSession());
+    const update = () => setSession(getSession());
+    update();
     setMounted(true);
+    return onSessionChange(update);
   }, []);
 
   return (
@@ -29,7 +31,7 @@ export default function HomePage() {
         <Logo size={56} />
         <h1 className="masthead__title">Komitty</h1>
         <p className="masthead__tagline">
-          Achievements in mathematics, physics, history, and more.
+          A comfy place for sharing your achievements.
         </p>
       </header>
 

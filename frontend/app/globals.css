@@ -104,6 +104,24 @@ a {
   width: 100%;
 }
 
+.btn--danger {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.7);
+  color: #f87171;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  font-size: 12px;
+  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 80ms ease;
+}
+.btn--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.5), 0 0 12px rgba(239, 68, 68, 0.28);
+}
+.btn--danger:active {
+  transform: scale(0.97);
+}
+
 /* ------------------------------------------------------------------ */
 /* Form fields                                                         */
 /* ------------------------------------------------------------------ */

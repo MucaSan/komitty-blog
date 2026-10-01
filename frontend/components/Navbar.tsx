@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
-import { clearSession, getSession } from "@/lib/session";
+import { clearSession, getSession, onSessionChange } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
 export function Navbar() {
@@ -11,13 +11,14 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setSession(getSession());
+    const update = () => setSession(getSession());
+    update();
     setMounted(true);
+    return onSessionChange(update);
   }, []);
 
   function handleLogout() {
     clearSession();
-    setSession(null);
   }
 
   return (
@@ -44,7 +45,7 @@ export function Navbar() {
               <Link href={`/u/${session.user.username}`} className="navbar__link">
                 @{session.user.username}
               </Link>
-              <button className="btn btn--pill-blue" style={{ padding: "6px 16px" }} onClick={handleLogout}>
+              <button className="btn btn--danger" style={{ padding: "6px 16px" }} onClick={handleLogout}>
                 Log out
               </button>
             </>

@@ -4,8 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Komitty",
-  description:
-    "A blog for sharing achievements in mathematics, physics, history, and more.",
+  description: "A comfy place for sharing your achievements.",
 };
 
 export default function RootLayout({

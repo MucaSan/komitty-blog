@@ -1,6 +1,7 @@
 import type { Session } from "./types";
 
 const KEY = "komitty_session";
+const EVENT = "komitty:session-changed";
 
 export function getSession(): Session | null {
   if (typeof window === "undefined") return null;
@@ -16,9 +17,19 @@ export function getSession(): Session | null {
 export function setSession(session: Session): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(KEY, JSON.stringify(session));
+  window.dispatchEvent(new Event(EVENT));
 }
 
 export function clearSession(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(KEY);
+  window.dispatchEvent(new Event(EVENT));
+}
+
+// Subscribe to session changes (login/logout) so the navbar updates without a
+// full page reload.
+export function onSessionChange(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(EVENT, callback);
+  return () => window.removeEventListener(EVENT, callback);
 }
