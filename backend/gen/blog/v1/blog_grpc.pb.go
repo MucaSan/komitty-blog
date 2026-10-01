@@ -22,6 +22,7 @@ const (
 	BlogService_CreateUser_FullMethodName    = "/blog.v1.BlogService/CreateUser"
 	BlogService_Login_FullMethodName         = "/blog.v1.BlogService/Login"
 	BlogService_CreatePost_FullMethodName    = "/blog.v1.BlogService/CreatePost"
+	BlogService_UploadImage_FullMethodName   = "/blog.v1.BlogService/UploadImage"
 	BlogService_ListPosts_FullMethodName     = "/blog.v1.BlogService/ListPosts"
 	BlogService_ListUserPosts_FullMethodName = "/blog.v1.BlogService/ListUserPosts"
 )
@@ -36,6 +37,8 @@ type BlogServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// CreatePost publishes a new post (requires Authorization bearer token).
 	CreatePost(ctx context.Context, in *CreatePostRequest, opts ...grpc.CallOption) (*CreatePostResponse, error)
+	// UploadImage stores an image and returns its public URL.
+	UploadImage(ctx context.Context, in *UploadImageRequest, opts ...grpc.CallOption) (*UploadImageResponse, error)
 	// ListPosts returns all posts, newest first.
 	ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
@@ -80,6 +83,16 @@ func (c *blogServiceClient) CreatePost(ctx context.Context, in *CreatePostReques
 	return out, nil
 }
 
+func (c *blogServiceClient) UploadImage(ctx context.Context, in *UploadImageRequest, opts ...grpc.CallOption) (*UploadImageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadImageResponse)
+	err := c.cc.Invoke(ctx, BlogService_UploadImage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *blogServiceClient) ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPostsResponse)
@@ -110,6 +123,8 @@ type BlogServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	// CreatePost publishes a new post (requires Authorization bearer token).
 	CreatePost(context.Context, *CreatePostRequest) (*CreatePostResponse, error)
+	// UploadImage stores an image and returns its public URL.
+	UploadImage(context.Context, *UploadImageRequest) (*UploadImageResponse, error)
 	// ListPosts returns all posts, newest first.
 	ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
@@ -132,6 +147,9 @@ func (UnimplementedBlogServiceServer) Login(context.Context, *LoginRequest) (*Lo
 }
 func (UnimplementedBlogServiceServer) CreatePost(context.Context, *CreatePostRequest) (*CreatePostResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreatePost not implemented")
+}
+func (UnimplementedBlogServiceServer) UploadImage(context.Context, *UploadImageRequest) (*UploadImageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UploadImage not implemented")
 }
 func (UnimplementedBlogServiceServer) ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPosts not implemented")
@@ -214,6 +232,24 @@ func _BlogService_CreatePost_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlogService_UploadImage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadImageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).UploadImage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_UploadImage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).UploadImage(ctx, req.(*UploadImageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BlogService_ListPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPostsRequest)
 	if err := dec(in); err != nil {
@@ -268,6 +304,10 @@ var BlogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreatePost",
 			Handler:    _BlogService_CreatePost_Handler,
+		},
+		{
+			MethodName: "UploadImage",
+			Handler:    _BlogService_UploadImage_Handler,
 		},
 		{
 			MethodName: "ListPosts",

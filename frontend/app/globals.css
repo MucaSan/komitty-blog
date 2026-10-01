@@ -598,6 +598,13 @@ a {
   border-radius: 2px;
   padding: 0 2px;
 }
+.post__content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 1.2em auto;
+}
 
 .auth__success {
   color: #4ade80;
@@ -765,6 +772,16 @@ a {
   color: inherit;
   padding: 0 2px;
   border-radius: 2px;
+}
+.richtext__content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 0.8em 0;
+}
+.richtext__content img.ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
 }
 
 .slash-menu {

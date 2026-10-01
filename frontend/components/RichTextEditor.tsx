@@ -185,9 +185,11 @@ function ToolbarButton({
 export function RichTextEditor({
   onChange,
   placeholder,
+  onUploadImage,
 }: {
   onChange?: (json: string, isEmpty: boolean) => void;
   placeholder?: string;
+  onUploadImage?: (file: File) => Promise<string>;
 }) {
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
 
@@ -231,6 +233,24 @@ export function RichTextEditor({
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }, [editor]);
+
+  const addImage = useCallback(() => {
+    if (!editor || !onUploadImage) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/gif,image/webp";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const url = await onUploadImage(file);
+        editor.chain().focus().setImage({ src: url }).run();
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : "Image upload failed");
+      }
+    };
+    input.click();
+  }, [editor, onUploadImage]);
 
   if (!editor) return null;
 
@@ -280,6 +300,7 @@ export function RichTextEditor({
           <ToolbarButton label="❝" title="Quote" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
           <ToolbarButton label="</>" title="Code block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
           <ToolbarButton label="—" title="Divider" onClick={() => editor.chain().focus().setHorizontalRule().run()} />
+          <ToolbarButton label="🖼" title="Image" onClick={addImage} />
         </div>
       </div>
 

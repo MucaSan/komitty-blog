@@ -32,6 +32,46 @@ table "users" {
   }
 }
 
+table "images" {
+  schema = schema.public
+  column "id" {
+    type = uuid
+    null = false
+  }
+  column "user_id" {
+    type = uuid
+    null = false
+  }
+  column "content_type" {
+    type = text
+    null = false
+  }
+  column "size" {
+    type = bigint
+    null = false
+  }
+  column "data" {
+    type = bytea
+    null = false
+  }
+  column "created_at" {
+    type = timestamptz
+    null = false
+    default = sql("now()")
+  }
+  primary_key {
+    columns = [column.id]
+  }
+  foreign_key "images_user_id_fkey" {
+    columns     = [column.user_id]
+    ref_columns = [table.users.column.id]
+    on_delete   = CASCADE
+  }
+  index "images_created_at_idx" {
+    columns = [column.created_at]
+  }
+}
+
 table "posts" {
   schema = schema.public
   column "id" {

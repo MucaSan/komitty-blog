@@ -103,6 +103,18 @@ export async function login(username: string, password: string): Promise<Session
   }
 }
 
+export async function uploadImage(
+  data: string,
+  contentType: string,
+  session: Session,
+): Promise<{ id: string; url: string }> {
+  return request<{ id: string; url: string }>("/v1/images", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.token}` },
+    body: JSON.stringify({ data, contentType }),
+  });
+}
+
 export async function createPost(title: string, content: string, session: Session): Promise<Post> {
   try {
     const data = await request<{ post: Post }>("/v1/posts", {

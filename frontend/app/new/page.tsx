@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { createPost } from "@/lib/api";
+import { createPost, uploadImage } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
@@ -36,6 +36,13 @@ export default function NewPostPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleUploadImage(file: File): Promise<string> {
+    if (!session) throw new Error("You need to be logged in to upload images");
+    const base64 = await fileToBase64(file);
+    const { url } = await uploadImage(base64, file.type, session);
+    return url;
   }
 
   if (mounted && !session) {
@@ -74,6 +81,7 @@ export default function NewPostPage() {
               setContent(json);
               setIsEmpty(empty);
             }}
+            onUploadImage={handleUploadImage}
           />
           <div className="auth__error">{error}</div>
           <button
@@ -88,4 +96,13 @@ export default function NewPostPage() {
       </div>
     </main>
   );
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? "").split(",")[1] ?? "");
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
 }

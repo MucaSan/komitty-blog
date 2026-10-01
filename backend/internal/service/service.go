@@ -157,6 +157,39 @@ func (s *Service) CreatePost(ctx context.Context, req *blogv1.CreatePostRequest)
 	}, nil
 }
 
+// UploadImage stores an uploaded image and returns its public URL.
+func (s *Service) UploadImage(ctx context.Context, req *blogv1.UploadImageRequest) (*blogv1.UploadImageResponse, error) {
+	claims, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	contentType := req.GetContentType()
+	if !isAllowedImageType(contentType) {
+		return nil, status.Error(codes.InvalidArgument, "unsupported image type")
+	}
+
+	data := req.GetData()
+	if len(data) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "image data is empty")
+	}
+	const maxImageSize = 8 << 20 // 8 MB
+	if len(data) > maxImageSize {
+		return nil, status.Error(codes.InvalidArgument, "image is too large (max 8 MB)")
+	}
+
+	id := uuid.NewString()
+	_, err = s.pool.Exec(ctx,
+		`INSERT INTO images (id, user_id, content_type, size, data) VALUES ($1, $2, $3, $4, $5)`,
+		id, claims.Subject, contentType, len(data), data,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to store image: %v", err)
+	}
+
+	return &blogv1.UploadImageResponse{Id: id, Url: "/v1/images/" + id}, nil
+}
+
 // ListPosts returns all posts, newest first.
 func (s *Service) ListPosts(ctx context.Context, _ *blogv1.ListPostsRequest) (*blogv1.ListPostsResponse, error) {
 	rows, err := s.pool.Query(ctx, `
@@ -255,6 +288,15 @@ func scanPosts(rows pgx.Rows) ([]*blogv1.Post, error) {
 		posts = append(posts, &p)
 	}
 	return posts, rows.Err()
+}
+
+func isAllowedImageType(contentType string) bool {
+	switch contentType {
+	case "image/png", "image/jpeg", "image/gif", "image/webp":
+		return true
+	default:
+		return false
+	}
 }
 
 func validateUsername(username string) error {

@@ -58,6 +58,18 @@ message CreatePostResponse {
   Post post = 1;
 }
 
+// UploadImageRequest uploads an image to be embedded in a post.
+message UploadImageRequest {
+  bytes data = 1;
+  string content_type = 2;
+}
+
+message UploadImageResponse {
+  string id = 1;
+  // url is the relative path used to render the image, e.g. /v1/images/<id>.
+  string url = 2;
+}
+
 message ListPostsRequest {}
 
 message ListPostsResponse {
@@ -93,6 +105,14 @@ service BlogService {
   rpc CreatePost(CreatePostRequest) returns (CreatePostResponse) {
     option (google.api.http) = {
       post: "/v1/posts"
+      body: "*"
+    };
+  }
+
+  // UploadImage stores an image and returns its public URL.
+  rpc UploadImage(UploadImageRequest) returns (UploadImageResponse) {
+    option (google.api.http) = {
+      post: "/v1/images"
       body: "*"
     };
   }
