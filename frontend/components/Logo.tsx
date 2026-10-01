@@ -4,7 +4,7 @@ export function Logo({ size = 48 }: { size?: number }) {
       src="/komitty-logo.png"
       width={size}
       height={size}
-      alt="Komitty"
+      alt="komitty"
       draggable={false}
       style={{ display: "block" }}
     />

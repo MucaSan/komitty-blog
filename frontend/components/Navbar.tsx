@@ -26,7 +26,7 @@ export function Navbar() {
       <div className="container navbar__inner">
         <Link href="/" className="navbar__brand">
           <Logo size={30} />
-          <span>Komitty</span>
+          <span>komitty</span>
         </Link>
         <nav className="navbar__links">
           <Link href="/" className="navbar__link">

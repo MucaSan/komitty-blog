@@ -29,7 +29,7 @@ export default function HomePage() {
     <main className="container">
       <header className="masthead">
         <Logo size={56} />
-        <h1 className="masthead__title">Komitty</h1>
+        <h1 className="masthead__title">komitty</h1>
         <p className="masthead__tagline">
           A comfy place for sharing your achievements.
         </p>

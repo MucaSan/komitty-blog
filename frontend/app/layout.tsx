@@ -3,8 +3,11 @@ import { Navbar } from "@/components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Komitty",
+  title: "komitty",
   description: "A comfy place for sharing your achievements.",
+  icons: {
+    icon: "/komitty-logo.png",
+  },
 };
 
 export default function RootLayout({
