@@ -31,7 +31,7 @@ export default function HomePage() {
         <Logo size={56} />
         <h1 className="masthead__title">komitty</h1>
         <p className="masthead__tagline">
-          A comfy place for sharing your achievements.
+          A place free for sharing your ideas.
         </p>
       </header>
 

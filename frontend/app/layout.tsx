@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "komitty",
-  description: "A comfy place for sharing your achievements.",
+  description: "A place free for sharing your ideas.",
   icons: {
     icon: "/komitty-logo.png",
   },
