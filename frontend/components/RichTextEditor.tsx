@@ -40,6 +40,7 @@ const slashItems: SlashItemDef[] = [
   { titleKey: "editor.quote", icon: "❝", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run() },
   { titleKey: "editor.codeBlock", icon: "</>", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run() },
   { titleKey: "editor.divider", icon: "—", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
+  { titleKey: "editor.table", icon: "▦", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
 ];
 
 const SlashCommand = Extension.create({
@@ -204,6 +205,11 @@ const ICONS = {
   quote: "M10 11H6.2a2 2 0 0 0-2 1.8A4 4 0 0 0 8 19a2 2 0 0 0 2-2v-6zm8 0h-3.8a2 2 0 0 0-2 1.8A4 4 0 0 0 16 19a2 2 0 0 0 2-2v-6z",
   codeBlock: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M10 12l-2 2 2 2M14 12l2 2-2 2",
   divider: "M5 12h14",
+  alignLeft: "M17 10H3M21 6H3M21 14H3M17 18H3",
+  alignCenter: "M18 10H6M21 6H3M21 14H3M18 18H6",
+  alignRight: "M21 10H7M21 6H3M21 14H3M21 18H7",
+  alignJustify: "M21 10H3M21 6H3M21 14H3M21 18H3",
+  table: "M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18",
 };
 
 function parseInitialContent(content?: string): string | object {
@@ -386,6 +392,13 @@ export function RichTextEditor({
         </div>
 
         <div className="toolbar__group">
+          <ToolbarButton icon={ICONS.alignLeft} title={t("editor.alignLeft")} active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()} />
+          <ToolbarButton icon={ICONS.alignCenter} title={t("editor.alignCenter")} active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()} />
+          <ToolbarButton icon={ICONS.alignRight} title={t("editor.alignRight")} active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()} />
+          <ToolbarButton icon={ICONS.alignJustify} title={t("editor.alignJustify")} active={editor.isActive({ textAlign: "justify" })} onClick={() => editor.chain().focus().setTextAlign("justify").run()} />
+        </div>
+
+        <div className="toolbar__group">
           <ToolbarButton icon={ICONS.bold} title={t("editor.bold")} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
           <ToolbarButton icon={ICONS.italic} title={t("editor.italic")} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
           <ToolbarButton icon={ICONS.underline} title={t("editor.underline")} active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
@@ -413,8 +426,19 @@ export function RichTextEditor({
           <ToolbarButton icon={ICONS.quote} title={t("editor.quote")} active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
           <ToolbarButton icon={ICONS.codeBlock} title={t("editor.codeBlock")} active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
           <ToolbarButton icon={ICONS.divider} title={t("editor.divider")} onClick={() => editor.chain().focus().setHorizontalRule().run()} />
+          <ToolbarButton icon={ICONS.table} title={t("editor.table")} active={editor.isActive("table")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} />
           <ToolbarButton icon={ICONS.image} title={t("editor.image")} onClick={addImage} />
         </div>
+
+        {editor.isActive("table") && (
+          <div className="toolbar__group">
+            <ToolbarButton label="+Row" title={t("editor.addRowAfter")} onClick={() => editor.chain().focus().addRowAfter().run()} />
+            <ToolbarButton label="+Col" title={t("editor.addColumnAfter")} onClick={() => editor.chain().focus().addColumnAfter().run()} />
+            <ToolbarButton label="−Row" title={t("editor.deleteRow")} onClick={() => editor.chain().focus().deleteRow().run()} />
+            <ToolbarButton label="−Col" title={t("editor.deleteColumn")} onClick={() => editor.chain().focus().deleteColumn().run()} />
+            <ToolbarButton label="✕" title={t("editor.deleteTable")} onClick={() => editor.chain().focus().deleteTable().run()} />
+          </div>
+        )}
       </div>
 
       <EditorContent editor={editor} />
