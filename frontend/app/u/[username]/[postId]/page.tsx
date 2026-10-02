@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TableOfContents } from "@/components/TableOfContents";
+import { useTranslation } from "@/components/LanguageProvider";
 import { deletePost, listUserPosts } from "@/lib/api";
 import { contentToHtml, contentToText, extractHeadings } from "@/lib/content";
 import { getSession } from "@/lib/session";
 import type { Post, Session } from "@/lib/types";
 
 export default function PostPage() {
+  const { t } = useTranslation();
   const params = useParams<{ username: string; postId: string }>();
   const username = params?.username ?? "";
   const postId = params?.postId ?? "";
@@ -31,13 +33,13 @@ export default function PostPage() {
 
   async function handleDelete() {
     if (!session || !post) return;
-    if (!window.confirm("Delete this post? This cannot be undone.")) return;
+    if (!window.confirm(t("post.deleteConfirm"))) return;
     setDeleting(true);
     try {
       await deletePost(post.id, session);
       router.push("/");
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed to delete post");
+      window.alert(err instanceof Error ? err.message : t("post.deleteFailed"));
       setDeleting(false);
     }
   }
@@ -93,7 +95,7 @@ export default function PostPage() {
   if (loading) {
     return (
       <main className="container">
-        <p className="empty">Loading…</p>
+        <p className="empty">{t("post.loading")}</p>
       </main>
     );
   }
@@ -101,7 +103,7 @@ export default function PostPage() {
   if (!post) {
     return (
       <main className="container">
-        <p className="empty">Post not found.</p>
+        <p className="empty">{t("post.notFound")}</p>
       </main>
     );
   }
@@ -124,19 +126,21 @@ export default function PostPage() {
             <span>·</span>
             <time>{date}</time>
             <span>·</span>
-            <span>{readingMinutes} min read</span>
+            <span>
+              {readingMinutes} {t("post.minRead")}
+            </span>
           </div>
           {mounted && session && session.user.id === post.userId && (
             <div className="post__actions">
               <Link href={`/u/${post.username}/${post.id}/edit`} className="btn btn--pill">
-                Edit
+                {t("post.edit")}
               </Link>
               <button
                 className="btn btn--danger"
                 onClick={handleDelete}
                 disabled={deleting}
               >
-                {deleting ? "Deleting…" : "Delete"}
+                {deleting ? t("post.deleting") : t("post.delete")}
               </button>
             </div>
           )}

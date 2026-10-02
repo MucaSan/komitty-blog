@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { PasswordField } from "@/components/PasswordField";
+import { useTranslation } from "@/components/LanguageProvider";
 import { createUser } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
 export default function NewUserPage() {
+  const { t } = useTranslation();
   const [session, setSession] = useState<Session | null>(null);
   const [mounted, setMounted] = useState(false);
   const [username, setUsername] = useState("");
@@ -29,19 +31,19 @@ export default function NewUserPage() {
     setSuccess("");
 
     if (password !== repeat) {
-      setError("Passwords do not match");
+      setError(t("errors.passwordsMismatch"));
       return;
     }
 
     setLoading(true);
     try {
       await createUser(username, password, session);
-      setSuccess(`Account "@${username}" created.`);
+      setSuccess(t("newUser.created", { username }));
       setUsername("");
       setPassword("");
       setRepeat("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("errors.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -51,11 +53,9 @@ export default function NewUserPage() {
     return (
       <main className="container">
         <p className="empty">
-          You need to{" "}
           <Link href="/login" style={{ color: "var(--primary)" }}>
-            log in
+            {t("newUser.needLogin")}
           </Link>
-          .
         </p>
       </main>
     );
@@ -64,7 +64,7 @@ export default function NewUserPage() {
   if (mounted && session && !session.user.isPrime) {
     return (
       <main className="container">
-        <p className="empty">Only the prime user can create accounts.</p>
+        <p className="empty">{t("newUser.onlyPrime")}</p>
       </main>
     );
   }
@@ -72,7 +72,7 @@ export default function NewUserPage() {
   return (
     <main className="container">
       <div className="editor">
-        <h1 className="editor__title">New user</h1>
+        <h1 className="editor__title">{t("newUser.title")}</h1>
         <form
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: 12 }}
@@ -80,20 +80,20 @@ export default function NewUserPage() {
           <div className="field">
             <input
               className="field__input"
-              placeholder="Username"
+              placeholder={t("newUser.username")}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="off"
             />
           </div>
           <PasswordField
-            placeholder="Password"
+            placeholder={t("newUser.password")}
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
           />
           <PasswordField
-            placeholder="Repeat password"
+            placeholder={t("newUser.repeatPassword")}
             value={repeat}
             onChange={setRepeat}
             autoComplete="new-password"
@@ -109,7 +109,7 @@ export default function NewUserPage() {
             disabled={loading}
             style={{ alignSelf: "flex-start" }}
           >
-            {loading ? "Creating…" : "Create account"}
+            {loading ? t("newUser.creating") : t("newUser.createAccount")}
           </button>
         </form>
       </div>

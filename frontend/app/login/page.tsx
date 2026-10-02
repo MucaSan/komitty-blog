@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { PasswordField } from "@/components/PasswordField";
+import { useTranslation } from "@/components/LanguageProvider";
 import { login } from "@/lib/api";
 import { setSession } from "@/lib/session";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +25,7 @@ export default function LoginPage() {
       setSession(session);
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("errors.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -32,20 +34,20 @@ export default function LoginPage() {
   return (
     <main className="auth">
       <Logo size={69} />
-      <h1 className="auth__title">Login</h1>
+      <h1 className="auth__title">{t("login.title")}</h1>
 
       <form className="auth__form" onSubmit={handleSubmit}>
         <div className="field">
           <input
             className="field__input"
-            placeholder="Username"
+            placeholder={t("login.username")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
           />
         </div>
         <PasswordField
-          placeholder="Password"
+          placeholder={t("login.password")}
           value={password}
           onChange={setPassword}
           autoComplete="current-password"
@@ -57,7 +59,7 @@ export default function LoginPage() {
           type="submit"
           disabled={loading}
         >
-          {loading ? "Logging in…" : "Continue"}
+          {loading ? t("login.loggingIn") : t("login.continue")}
         </button>
       </form>
     </main>

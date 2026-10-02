@@ -3,10 +3,12 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PostCard } from "@/components/PostCard";
+import { useTranslation } from "@/components/LanguageProvider";
 import { listUserPosts } from "@/lib/api";
 import type { Post } from "@/lib/types";
 
 export default function UserPage() {
+  const { t } = useTranslation();
   const params = useParams<{ username: string }>();
   const username = params?.username ?? "";
 
@@ -26,14 +28,14 @@ export default function UserPage() {
       <div className="profile__header">
         <h1 className="profile__username">@{username}</h1>
         <p className="profile__subtitle">
-          {posts.length} post{posts.length === 1 ? "" : "s"}
+          {posts.length} {t(posts.length === 1 ? "home.post" : "home.posts")}
         </p>
       </div>
 
       {loading ? (
-        <p className="empty">Loading…</p>
+        <p className="empty">{t("post.loading")}</p>
       ) : posts.length === 0 ? (
-        <p className="empty">This user hasn&apos;t posted anything yet.</p>
+        <p className="empty">{t("post.noPostsYet")}</p>
       ) : (
         posts.map((post) => <PostCard key={post.id} post={post} />)
       )}

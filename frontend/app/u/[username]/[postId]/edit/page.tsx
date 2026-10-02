@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { useTranslation } from "@/components/LanguageProvider";
 import { listUserPosts, updatePost, uploadImage } from "@/lib/api";
 import { fileToBase64 } from "@/lib/file";
 import { getSession } from "@/lib/session";
 import type { Post, Session } from "@/lib/types";
 
 export default function EditPostPage() {
+  const { t } = useTranslation();
   const params = useParams<{ username: string; postId: string }>();
   const username = params?.username ?? "";
   const postId = params?.postId ?? "";
@@ -47,7 +49,7 @@ export default function EditPostPage() {
   }, [username, postId]);
 
   async function handleUploadImage(file: File): Promise<string> {
-    if (!session) throw new Error("You need to be logged in to upload images");
+    if (!session) throw new Error(t("errors.needLoginImages"));
     const base64 = await fileToBase64(file);
     const { url } = await uploadImage(base64, file.type, session);
     return url;
@@ -62,7 +64,7 @@ export default function EditPostPage() {
       await updatePost(post.id, title, content, session);
       router.push(`/u/${post.username}/${post.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("errors.somethingWentWrong"));
     } finally {
       setSaving(false);
     }
@@ -71,7 +73,7 @@ export default function EditPostPage() {
   if (loading) {
     return (
       <main className="container">
-        <p className="empty">Loading…</p>
+        <p className="empty">{t("post.loading")}</p>
       </main>
     );
   }
@@ -79,7 +81,7 @@ export default function EditPostPage() {
   if (!post) {
     return (
       <main className="container">
-        <p className="empty">Post not found.</p>
+        <p className="empty">{t("post.notFound")}</p>
       </main>
     );
   }
@@ -88,11 +90,9 @@ export default function EditPostPage() {
     return (
       <main className="container">
         <p className="empty">
-          You need to{" "}
           <Link href="/login" style={{ color: "var(--primary)" }}>
-            log in
+            {t("editPost.needLogin")}
           </Link>
-          .
         </p>
       </main>
     );
@@ -101,7 +101,7 @@ export default function EditPostPage() {
   if (mounted && session && session.user.id !== post.userId) {
     return (
       <main className="container">
-        <p className="empty">You can only edit your own posts.</p>
+        <p className="empty">{t("editPost.notOwner")}</p>
       </main>
     );
   }
@@ -111,19 +111,20 @@ export default function EditPostPage() {
   return (
     <main className="container">
       <div className="editor">
-        <h1 className="editor__title">Edit post</h1>
+        <h1 className="editor__title">{t("editPost.title")}</h1>
         <form
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: 12 }}
         >
           <input
             className="editor__title-input"
-            placeholder="Post title…"
+            placeholder={t("newPost.titlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <RichTextEditor
             initialContent={post.content}
+            placeholder={t("newPost.contentPlaceholder")}
             onChange={(json, empty) => {
               setContent(json);
               setIsEmpty(empty);
@@ -137,10 +138,10 @@ export default function EditPostPage() {
               type="submit"
               disabled={saving || !canSave}
             >
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? t("editPost.saving") : t("editPost.save")}
             </button>
             <Link href={`/u/${post.username}/${post.id}`} className="btn btn--pill">
-              Cancel
+              {t("editPost.cancel")}
             </Link>
           </div>
         </form>

@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { useTranslation } from "@/components/LanguageProvider";
 import { createPost, uploadImage } from "@/lib/api";
 import { fileToBase64 } from "@/lib/file";
 import { getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
 export default function NewPostPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -33,14 +35,14 @@ export default function NewPostPage() {
       const post = await createPost(title, content, session);
       router.push(`/u/${post.username}/${post.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("errors.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
   }
 
   async function handleUploadImage(file: File): Promise<string> {
-    if (!session) throw new Error("You need to be logged in to upload images");
+    if (!session) throw new Error(t("errors.needLoginImages"));
     const base64 = await fileToBase64(file);
     const { url } = await uploadImage(base64, file.type, session);
     return url;
@@ -50,11 +52,9 @@ export default function NewPostPage() {
     return (
       <main className="container">
         <p className="empty">
-          You need to{" "}
           <Link href="/login" style={{ color: "var(--primary)" }}>
-            log in
-          </Link>{" "}
-          to create a post.
+            {t("newPost.needLogin")}
+          </Link>
         </p>
       </main>
     );
@@ -65,19 +65,20 @@ export default function NewPostPage() {
   return (
     <main className="container">
       <div className="editor">
-        <h1 className="editor__title">New post</h1>
+        <h1 className="editor__title">{t("newPost.title")}</h1>
         <form
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: 12 }}
         >
           <input
             className="editor__title-input"
-            placeholder="Post title…"
+            placeholder={t("newPost.titlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             autoComplete="off"
           />
           <RichTextEditor
+            placeholder={t("newPost.contentPlaceholder")}
             onChange={(json, empty) => {
               setContent(json);
               setIsEmpty(empty);
@@ -91,7 +92,7 @@ export default function NewPostPage() {
             disabled={loading || !canPublish}
             style={{ alignSelf: "flex-start" }}
           >
-            {loading ? "Publishing…" : "Publish"}
+            {loading ? t("newPost.publishing") : t("newPost.publish")}
           </button>
         </form>
       </div>

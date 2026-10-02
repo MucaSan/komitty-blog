@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { clearSession, getSession, onSessionChange } from "@/lib/session";
+import { useLanguage, useTranslation } from "@/components/LanguageProvider";
 import type { Session } from "@/lib/types";
 
 export function Navbar() {
+  const { t } = useTranslation();
+  const { lang, setLang } = useLanguage();
   const [session, setSession] = useState<Session | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -30,30 +33,48 @@ export function Navbar() {
         </Link>
         <nav className="navbar__links">
           <Link href="/" className="navbar__link">
-            Feed
+            {t("nav.feed")}
           </Link>
           {mounted && session ? (
             <>
               {session.user.isPrime && (
                 <Link href="/new-user" className="navbar__link">
-                  New user
+                  {t("nav.newUser")}
                 </Link>
               )}
               <Link href="/new" className="navbar__link">
-                New post
+                {t("nav.newPost")}
               </Link>
               <Link href={`/u/${session.user.username}`} className="navbar__link">
                 @{session.user.username}
               </Link>
               <button className="btn btn--danger" style={{ padding: "6px 16px" }} onClick={handleLogout}>
-                Log out
+                {t("nav.logout")}
               </button>
             </>
           ) : (
             <Link href="/login" className="navbar__link">
-              Login
+              {t("nav.login")}
             </Link>
           )}
+
+          <div className="lang-switcher" role="group" aria-label="Language">
+            <button
+              type="button"
+              className={lang === "en" ? "lang-switcher__active" : ""}
+              onClick={() => setLang("en")}
+            >
+              EN
+            </button>
+            <span className="lang-switcher__sep">|</span>
+            <button
+              type="button"
+              className={lang === "pt" ? "lang-switcher__active" : ""}
+              onClick={() => setLang("pt")}
+            >
+              PT
+            </button>
+          </div>
         </nav>
       </div>
     </header>

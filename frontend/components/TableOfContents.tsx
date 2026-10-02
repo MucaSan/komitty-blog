@@ -1,3 +1,4 @@
+import { useTranslation } from "@/components/LanguageProvider";
 import type { Heading } from "@/lib/content";
 
 export function TableOfContents({
@@ -7,11 +8,12 @@ export function TableOfContents({
   headings: Heading[];
   activeId: string | null;
 }) {
+  const { t } = useTranslation();
   if (headings.length === 0) return null;
 
   return (
-    <nav className="toc" aria-label="Table of contents">
-      <p className="toc__title">On this page</p>
+    <nav className="toc" aria-label={t("post.onThisPage")}>
+      <p className="toc__title">{t("post.onThisPage")}</p>
       <ul className="toc__list">
         {headings.map((h) => (
           <li

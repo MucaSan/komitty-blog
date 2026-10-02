@@ -13,6 +13,7 @@ import { Extension } from "@tiptap/core";
 import Placeholder from "@tiptap/extension-placeholder";
 import Suggestion from "@tiptap/suggestion";
 import { editorExtensions } from "@/lib/editorExtensions";
+import { useTranslation } from "@/components/LanguageProvider";
 
 type Range = { from: number; to: number };
 type SlashProps = { editor: any; range: Range };
@@ -23,16 +24,22 @@ type SlashItem = {
   command: (props: SlashProps) => void;
 };
 
-const slashItems: SlashItem[] = [
-  { title: "Text", icon: "T", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run() },
-  { title: "Heading 1", icon: "H1", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run() },
-  { title: "Heading 2", icon: "H2", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run() },
-  { title: "Heading 3", icon: "H3", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 3 }).run() },
-  { title: "Bullet list", icon: "•", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
-  { title: "Numbered list", icon: "1.", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
-  { title: "Quote", icon: "❝", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run() },
-  { title: "Code block", icon: "</>", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run() },
-  { title: "Divider", icon: "—", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
+type SlashItemDef = Omit<SlashItem, "title"> & { titleKey: string };
+
+// Module-level translator for the slash menu, which is rendered outside the
+// React context tree via ReactRenderer.
+let currentT: (key: string) => string = (key) => key;
+
+const slashItems: SlashItemDef[] = [
+  { titleKey: "editor.text", icon: "T", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run() },
+  { titleKey: "editor.heading1", icon: "H1", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run() },
+  { titleKey: "editor.heading2", icon: "H2", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run() },
+  { titleKey: "editor.heading3", icon: "H3", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 3 }).run() },
+  { titleKey: "editor.bulletList", icon: "•", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
+  { titleKey: "editor.orderedList", icon: "1.", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
+  { titleKey: "editor.quote", icon: "❝", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run() },
+  { titleKey: "editor.codeBlock", icon: "</>", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run() },
+  { titleKey: "editor.divider", icon: "—", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
 ];
 
 const SlashCommand = Extension.create({
@@ -45,10 +52,17 @@ const SlashCommand = Extension.create({
         command: ({ editor, range, props }) => {
           (props as SlashItem).command({ editor, range });
         },
-        items: ({ query }) =>
-          slashItems
-            .filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
-            .slice(0, 10),
+        items: ({ query }) => {
+          const q = query.toLowerCase();
+          return slashItems
+            .filter((item) => currentT(item.titleKey).toLowerCase().includes(q))
+            .slice(0, 10)
+            .map((item): SlashItem => ({
+              title: currentT(item.titleKey),
+              icon: item.icon,
+              command: item.command,
+            }));
+        },
         render: () => {
           let component: ReactRenderer | null = null;
           let el: HTMLElement | null = null;
@@ -130,7 +144,7 @@ const SlashMenu = forwardRef(function SlashMenu(
   return (
     <div className="slash-menu">
       {props.items.length === 0 ? (
-        <div className="slash-menu__empty">No results</div>
+        <div className="slash-menu__empty">{currentT("editor.noResults")}</div>
       ) : (
         props.items.map((item, i) => (
           <button
@@ -241,6 +255,8 @@ export function RichTextEditor({
   initialContent?: string;
 }) {
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
+  const { t } = useTranslation();
+  currentT = t;
 
   const editor = useEditor({
     extensions: [
@@ -274,7 +290,7 @@ export function RichTextEditor({
   const setLink = useCallback(() => {
     if (!editor) return;
     const previous = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Link URL", previous ?? "https://");
+    const url = window.prompt(t("editor.linkPrompt"), previous ?? "https://");
     if (url === null) return;
     if (url === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
@@ -296,7 +312,7 @@ export function RichTextEditor({
             .run();
         })
         .catch((err) => {
-          window.alert(err instanceof Error ? err.message : "Image upload failed");
+          window.alert(err instanceof Error ? err.message : t("editor.uploadFailed"));
         });
     },
     [editor, onUploadImage],
@@ -364,21 +380,21 @@ export function RichTextEditor({
     <div className="richtext">
       <div className="toolbar">
         <div className="toolbar__group">
-          <ToolbarButton label="H1" title="Heading 1" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
-          <ToolbarButton label="H2" title="Heading 2" active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
-          <ToolbarButton label="H3" title="Heading 3" active={editor.isActive("heading", { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} />
+          <ToolbarButton label="H1" title={t("editor.heading1")} active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
+          <ToolbarButton label="H2" title={t("editor.heading2")} active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
+          <ToolbarButton label="H3" title={t("editor.heading3")} active={editor.isActive("heading", { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} />
         </div>
 
         <div className="toolbar__group">
-          <ToolbarButton icon={ICONS.bold} title="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
-          <ToolbarButton icon={ICONS.italic} title="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
-          <ToolbarButton icon={ICONS.underline} title="Underline" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
-          <ToolbarButton icon={ICONS.strike} title="Strikethrough" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} />
-          <ToolbarButton icon={ICONS.code} title="Inline code" active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()} />
-          <ToolbarButton icon={ICONS.link} title="Link" active={editor.isActive("link")} onClick={setLink} />
-          <ToolbarButton icon={ICONS.highlight} title="Highlight" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} />
+          <ToolbarButton icon={ICONS.bold} title={t("editor.bold")} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
+          <ToolbarButton icon={ICONS.italic} title={t("editor.italic")} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
+          <ToolbarButton icon={ICONS.underline} title={t("editor.underline")} active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
+          <ToolbarButton icon={ICONS.strike} title={t("editor.strikethrough")} active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} />
+          <ToolbarButton icon={ICONS.code} title={t("editor.inlineCode")} active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()} />
+          <ToolbarButton icon={ICONS.link} title={t("editor.link")} active={editor.isActive("link")} onClick={setLink} />
+          <ToolbarButton icon={ICONS.highlight} title={t("editor.highlight")} active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} />
           <div className="toolbar__color">
-            <ToolbarButton label={<span className="color-swatch">A</span>} title="Text color" onClick={() => setColorMenuOpen((o) => !o)} />
+            <ToolbarButton label={<span className="color-swatch">A</span>} title={t("editor.textColor")} onClick={() => setColorMenuOpen((o) => !o)} />
             {colorMenuOpen && (
               <div className="color-menu">
                 {COLORS.map((c) => (
@@ -392,12 +408,12 @@ export function RichTextEditor({
         </div>
 
         <div className="toolbar__group">
-          <ToolbarButton icon={ICONS.bulletList} title="Bullet list" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} />
-          <ToolbarButton icon={ICONS.orderedList} title="Ordered list" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
-          <ToolbarButton icon={ICONS.quote} title="Quote" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
-          <ToolbarButton icon={ICONS.codeBlock} title="Code block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
-          <ToolbarButton icon={ICONS.divider} title="Divider" onClick={() => editor.chain().focus().setHorizontalRule().run()} />
-          <ToolbarButton icon={ICONS.image} title="Image" onClick={addImage} />
+          <ToolbarButton icon={ICONS.bulletList} title={t("editor.bulletList")} active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} />
+          <ToolbarButton icon={ICONS.orderedList} title={t("editor.orderedList")} active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
+          <ToolbarButton icon={ICONS.quote} title={t("editor.quote")} active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
+          <ToolbarButton icon={ICONS.codeBlock} title={t("editor.codeBlock")} active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
+          <ToolbarButton icon={ICONS.divider} title={t("editor.divider")} onClick={() => editor.chain().focus().setHorizontalRule().run()} />
+          <ToolbarButton icon={ICONS.image} title={t("editor.image")} onClick={addImage} />
         </div>
       </div>
 

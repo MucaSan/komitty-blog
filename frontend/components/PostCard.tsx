@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { useTranslation } from "@/components/LanguageProvider";
 import { contentToText } from "@/lib/content";
 import type { Post } from "@/lib/types";
 
 export function PostCard({ post }: { post: Post }) {
+  const { t } = useTranslation();
   const date = new Date(post.createdAt).toLocaleDateString(undefined, {
     year: "numeric",
     month: "long",
@@ -23,7 +25,7 @@ export function PostCard({ post }: { post: Post }) {
       </div>
       <p className="post-entry__excerpt">{contentToText(post.content)}</p>
       <Link href={`/u/${post.username}/${post.id}`} className="post-entry__more">
-        Read more →
+        {t("post.readMore")} →
       </Link>
     </article>
   );

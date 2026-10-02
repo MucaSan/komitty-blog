@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/components/LanguageProvider";
 
 export function PasswordField({
   placeholder,
@@ -14,6 +15,7 @@ export function PasswordField({
   autoComplete?: string;
 }) {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="field">
@@ -30,7 +32,7 @@ export function PasswordField({
         type="button"
         className="field__toggle"
         onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? "Hide password" : "Show password"}
+        aria-label={visible ? t("password.hide") : t("password.show")}
       >
         {visible ? <EyeOffIcon /> : <EyeIcon />}
       </button>
