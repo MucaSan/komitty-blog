@@ -14,10 +14,21 @@ import { Extension } from "@tiptap/core";
 import Placeholder from "@tiptap/extension-placeholder";
 import Suggestion from "@tiptap/suggestion";
 import { editorExtensions } from "@/lib/editorExtensions";
+import {
+  EDITOR_SHORTCUTS,
+  EditorShortcuts,
+  formatShortcut,
+  toAriaKeyshortcuts,
+  useIsMac,
+  type EditorShortcutHandlers,
+} from "@/lib/editorShortcuts";
 import { useTranslation } from "@/components/LanguageProvider";
 
 type Range = { from: number; to: number };
 type SlashProps = { editor: any; range: Range };
+
+// Position and content of the keyboard-shortcut tooltip.
+type ToolbarTip = { label: string; keys: string; x: number; y: number };
 
 type SlashItem = {
   title: string;
@@ -230,18 +241,27 @@ function ToolbarButton({
   icon,
   label,
   title,
+  shortcut,
 }: {
   active?: boolean;
   onClick: () => void;
   icon?: string;
   label?: ReactNode;
   title?: string;
+  /** TipTap key binding, e.g. `"Mod-Shift-8"`; shown in the tooltip. */
+  shortcut?: string;
 }) {
+  const isMac = useIsMac();
+  const keys = shortcut ? formatShortcut(shortcut, isMac) : "";
+
   return (
     <button
       type="button"
-      title={title}
       className={`toolbar-btn ${active ? "toolbar-btn--active" : ""}`}
+      aria-label={title}
+      aria-keyshortcuts={shortcut ? toAriaKeyshortcuts(shortcut, isMac) : undefined}
+      data-tooltip={title}
+      data-shortcut={keys || undefined}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
     >
@@ -263,6 +283,7 @@ export function RichTextEditor({
 }) {
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const [colorMenuPos, setColorMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [tip, setTip] = useState<ToolbarTip | null>(null);
   const colorWrapRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslation();
   currentT = t;
@@ -281,6 +302,7 @@ export function RichTextEditor({
   }, [colorMenuOpen]);
 
   const toggleColorMenu = () => {
+    setTip(null);
     if (colorMenuOpen) {
       setColorMenuOpen(false);
       return;
@@ -295,6 +317,11 @@ export function RichTextEditor({
     setColorMenuOpen(true);
   };
 
+  // Keyboard shortcuts for the toolbar actions that have no TipTap binding of
+  // their own. The extension reads the handlers lazily, so it always calls the
+  // current callbacks (which capture editor state such as `colorMenuOpen`).
+  const shortcutHandlersRef = useRef<EditorShortcutHandlers | null>(null);
+
   const editor = useEditor({
     extensions: [
       ...editorExtensions,
@@ -302,6 +329,7 @@ export function RichTextEditor({
         placeholder: placeholder ?? "Write about your achievement…",
       }),
       SlashCommand,
+      EditorShortcuts.configure({ getHandlers: () => shortcutHandlersRef.current }),
     ],
     content: parseInitialContent(initialContent),
     editorProps: {
@@ -367,6 +395,36 @@ export function RichTextEditor({
     input.click();
   }, [editor, onUploadImage, uploadAndInsert]);
 
+  // Kept in sync on every render so the shortcuts always call fresh callbacks.
+  useEffect(() => {
+    if (!editor) {
+      shortcutHandlersRef.current = null;
+      return;
+    }
+    shortcutHandlersRef.current = {
+      link: () => {
+        setLink();
+        return true;
+      },
+      textColor: () => {
+        toggleColorMenu();
+        return true;
+      },
+      divider: () => editor.chain().focus().setHorizontalRule().run(),
+      table: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+      image: () => {
+        if (!onUploadImage) return false;
+        addImage();
+        return true;
+      },
+      addRowAfter: () => editor.chain().focus().addRowAfter().run(),
+      addColumnAfter: () => editor.chain().focus().addColumnAfter().run(),
+      deleteRow: () => editor.chain().focus().deleteRow().run(),
+      deleteColumn: () => editor.chain().focus().deleteColumn().run(),
+      deleteTable: () => editor.chain().focus().deleteTable().run(),
+    };
+  });
+
   // Drag-and-drop image upload.
   useEffect(() => {
     if (!editor) return;
@@ -413,36 +471,67 @@ export function RichTextEditor({
     setColorMenuOpen(false);
   };
 
+  // A single delegated handler drives the tooltip of whichever toolbar button
+  // is hovered or focused.
+  const showTip = (target: EventTarget | null) => {
+    const button = target instanceof HTMLElement ? target.closest<HTMLElement>("[data-tooltip]") : null;
+    if (!button) {
+      setTip(null);
+      return;
+    }
+    const rect = button.getBoundingClientRect();
+    const next: ToolbarTip = {
+      label: button.dataset.tooltip ?? "",
+      keys: button.dataset.shortcut ?? "",
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    };
+    setTip((prev) =>
+      prev && prev.label === next.label && prev.keys === next.keys && prev.x === next.x && prev.y === next.y
+        ? prev
+        : next,
+    );
+  };
+
   return (
     <div className="richtext">
-      <div className="toolbar">
+      <div
+        className="toolbar"
+        onMouseOver={(e) => showTip(e.target)}
+        onMouseLeave={() => setTip(null)}
+        onFocus={(e) => showTip(e.target)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setTip(null);
+        }}
+        onScroll={() => setTip(null)}
+      >
         <div className="toolbar__group">
-          <ToolbarButton label="H1" title={t("editor.heading1")} active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
-          <ToolbarButton label="H2" title={t("editor.heading2")} active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
-          <ToolbarButton label="H3" title={t("editor.heading3")} active={editor.isActive("heading", { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} />
+          <ToolbarButton label="H1" title={t("editor.heading1")} active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} shortcut={EDITOR_SHORTCUTS.heading1} />
+          <ToolbarButton label="H2" title={t("editor.heading2")} active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} shortcut={EDITOR_SHORTCUTS.heading2} />
+          <ToolbarButton label="H3" title={t("editor.heading3")} active={editor.isActive("heading", { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} shortcut={EDITOR_SHORTCUTS.heading3} />
         </div>
 
         <div className="toolbar__group">
-          <ToolbarButton icon={ICONS.alignLeft} title={t("editor.alignLeft")} active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()} />
-          <ToolbarButton icon={ICONS.alignCenter} title={t("editor.alignCenter")} active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()} />
-          <ToolbarButton icon={ICONS.alignRight} title={t("editor.alignRight")} active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()} />
-          <ToolbarButton icon={ICONS.alignJustify} title={t("editor.alignJustify")} active={editor.isActive({ textAlign: "justify" })} onClick={() => editor.chain().focus().setTextAlign("justify").run()} />
+          <ToolbarButton icon={ICONS.alignLeft} title={t("editor.alignLeft")} active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()} shortcut={EDITOR_SHORTCUTS.alignLeft} />
+          <ToolbarButton icon={ICONS.alignCenter} title={t("editor.alignCenter")} active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()} shortcut={EDITOR_SHORTCUTS.alignCenter} />
+          <ToolbarButton icon={ICONS.alignRight} title={t("editor.alignRight")} active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()} shortcut={EDITOR_SHORTCUTS.alignRight} />
+          <ToolbarButton icon={ICONS.alignJustify} title={t("editor.alignJustify")} active={editor.isActive({ textAlign: "justify" })} onClick={() => editor.chain().focus().setTextAlign("justify").run()} shortcut={EDITOR_SHORTCUTS.alignJustify} />
         </div>
 
         <div className="toolbar__group">
-          <ToolbarButton icon={ICONS.bold} title={t("editor.bold")} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
-          <ToolbarButton icon={ICONS.italic} title={t("editor.italic")} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
-          <ToolbarButton icon={ICONS.underline} title={t("editor.underline")} active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
-          <ToolbarButton icon={ICONS.strike} title={t("editor.strikethrough")} active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} />
-          <ToolbarButton icon={ICONS.code} title={t("editor.inlineCode")} active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()} />
-          <ToolbarButton icon={ICONS.link} title={t("editor.link")} active={editor.isActive("link")} onClick={setLink} />
-          <ToolbarButton icon={ICONS.highlight} title={t("editor.highlight")} active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} />
+          <ToolbarButton icon={ICONS.bold} title={t("editor.bold")} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} shortcut={EDITOR_SHORTCUTS.bold} />
+          <ToolbarButton icon={ICONS.italic} title={t("editor.italic")} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} shortcut={EDITOR_SHORTCUTS.italic} />
+          <ToolbarButton icon={ICONS.underline} title={t("editor.underline")} active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} shortcut={EDITOR_SHORTCUTS.underline} />
+          <ToolbarButton icon={ICONS.strike} title={t("editor.strikethrough")} active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} shortcut={EDITOR_SHORTCUTS.strike} />
+          <ToolbarButton icon={ICONS.code} title={t("editor.inlineCode")} active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()} shortcut={EDITOR_SHORTCUTS.inlineCode} />
+          <ToolbarButton icon={ICONS.link} title={t("editor.link")} active={editor.isActive("link")} onClick={setLink} shortcut={EDITOR_SHORTCUTS.link} />
+          <ToolbarButton icon={ICONS.highlight} title={t("editor.highlight")} active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} shortcut={EDITOR_SHORTCUTS.highlight} />
           <div className="toolbar__color" ref={colorWrapRef}>
-            <ToolbarButton label={<span className="color-swatch">A</span>} title={t("editor.textColor")} onClick={toggleColorMenu} />
+            <ToolbarButton label={<span className="color-swatch">A</span>} title={t("editor.textColor")} onClick={toggleColorMenu} shortcut={EDITOR_SHORTCUTS.textColor} />
             {colorMenuOpen && colorMenuPos && (
               <div className="color-menu" style={{ top: colorMenuPos.top, left: colorMenuPos.left }}>
                 {COLORS.map((c) => (
-                  <button key={c.label} type="button" className="color-menu__item" title={c.label} onClick={() => setColor(c.value)}>
+                  <button key={c.label} type="button" className="color-menu__item" data-tooltip={c.label} onClick={() => setColor(c.value)}>
                     <span className="color-menu__dot" style={{ background: c.value || "var(--text)" }} />
                   </button>
                 ))}
@@ -452,25 +541,32 @@ export function RichTextEditor({
         </div>
 
         <div className="toolbar__group">
-          <ToolbarButton icon={ICONS.bulletList} title={t("editor.bulletList")} active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} />
-          <ToolbarButton icon={ICONS.orderedList} title={t("editor.orderedList")} active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
-          <ToolbarButton icon={ICONS.quote} title={t("editor.quote")} active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
-          <ToolbarButton icon={ICONS.codeBlock} title={t("editor.codeBlock")} active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
-          <ToolbarButton icon={ICONS.divider} title={t("editor.divider")} onClick={() => editor.chain().focus().setHorizontalRule().run()} />
-          <ToolbarButton icon={ICONS.table} title={t("editor.table")} active={editor.isActive("table")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} />
-          <ToolbarButton icon={ICONS.image} title={t("editor.image")} onClick={addImage} />
+          <ToolbarButton icon={ICONS.bulletList} title={t("editor.bulletList")} active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} shortcut={EDITOR_SHORTCUTS.bulletList} />
+          <ToolbarButton icon={ICONS.orderedList} title={t("editor.orderedList")} active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} shortcut={EDITOR_SHORTCUTS.orderedList} />
+          <ToolbarButton icon={ICONS.quote} title={t("editor.quote")} active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} shortcut={EDITOR_SHORTCUTS.quote} />
+          <ToolbarButton icon={ICONS.codeBlock} title={t("editor.codeBlock")} active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} shortcut={EDITOR_SHORTCUTS.codeBlock} />
+          <ToolbarButton icon={ICONS.divider} title={t("editor.divider")} onClick={() => editor.chain().focus().setHorizontalRule().run()} shortcut={EDITOR_SHORTCUTS.divider} />
+          <ToolbarButton icon={ICONS.table} title={t("editor.table")} active={editor.isActive("table")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} shortcut={EDITOR_SHORTCUTS.table} />
+          <ToolbarButton icon={ICONS.image} title={t("editor.image")} onClick={addImage} shortcut={EDITOR_SHORTCUTS.image} />
         </div>
 
         {editor.isActive("table") && (
           <div className="toolbar__group">
-            <ToolbarButton label="+Row" title={t("editor.addRowAfter")} onClick={() => editor.chain().focus().addRowAfter().run()} />
-            <ToolbarButton label="+Col" title={t("editor.addColumnAfter")} onClick={() => editor.chain().focus().addColumnAfter().run()} />
-            <ToolbarButton label="−Row" title={t("editor.deleteRow")} onClick={() => editor.chain().focus().deleteRow().run()} />
-            <ToolbarButton label="−Col" title={t("editor.deleteColumn")} onClick={() => editor.chain().focus().deleteColumn().run()} />
-            <ToolbarButton label="✕" title={t("editor.deleteTable")} onClick={() => editor.chain().focus().deleteTable().run()} />
+            <ToolbarButton label="+Row" title={t("editor.addRowAfter")} onClick={() => editor.chain().focus().addRowAfter().run()} shortcut={EDITOR_SHORTCUTS.addRowAfter} />
+            <ToolbarButton label="+Col" title={t("editor.addColumnAfter")} onClick={() => editor.chain().focus().addColumnAfter().run()} shortcut={EDITOR_SHORTCUTS.addColumnAfter} />
+            <ToolbarButton label="−Row" title={t("editor.deleteRow")} onClick={() => editor.chain().focus().deleteRow().run()} shortcut={EDITOR_SHORTCUTS.deleteRow} />
+            <ToolbarButton label="−Col" title={t("editor.deleteColumn")} onClick={() => editor.chain().focus().deleteColumn().run()} shortcut={EDITOR_SHORTCUTS.deleteColumn} />
+            <ToolbarButton label="✕" title={t("editor.deleteTable")} onClick={() => editor.chain().focus().deleteTable().run()} shortcut={EDITOR_SHORTCUTS.deleteTable} />
           </div>
         )}
       </div>
+
+      {tip && (
+        <div className="toolbar-tip" role="tooltip" style={{ top: tip.y, left: tip.x }}>
+          <span className="toolbar-tip__label">{tip.label}</span>
+          {tip.keys ? <kbd className="toolbar-tip__kbd">{tip.keys}</kbd> : null}
+        </div>
+      )}
 
       <EditorContent editor={editor} />
     </div>

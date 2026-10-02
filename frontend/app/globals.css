@@ -836,6 +836,38 @@ a {
   background: rgba(7, 143, 228, 0.2);
   color: var(--primary);
 }
+/* Tooltip with the label and keyboard shortcut of the hovered (or focused)
+   toolbar button. Rendered with position:fixed (see RichTextEditor) so it is
+   not clipped by the horizontally scrollable toolbar or the editor border. */
+.toolbar-tip {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 280px;
+  padding: 5px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 8px));
+}
+.toolbar-tip__kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  padding: 2px 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  color: var(--text-secondary);
+}
 .toolbar__color {
   position: relative;
 }
