@@ -25,6 +25,7 @@ const (
 	BlogService_UploadImage_FullMethodName   = "/blog.v1.BlogService/UploadImage"
 	BlogService_UpdatePost_FullMethodName    = "/blog.v1.BlogService/UpdatePost"
 	BlogService_DeletePost_FullMethodName    = "/blog.v1.BlogService/DeletePost"
+	BlogService_GetPost_FullMethodName       = "/blog.v1.BlogService/GetPost"
 	BlogService_ListPosts_FullMethodName     = "/blog.v1.BlogService/ListPosts"
 	BlogService_ListUserPosts_FullMethodName = "/blog.v1.BlogService/ListUserPosts"
 )
@@ -45,6 +46,9 @@ type BlogServiceClient interface {
 	UpdatePost(ctx context.Context, in *UpdatePostRequest, opts ...grpc.CallOption) (*UpdatePostResponse, error)
 	// DeletePost removes a post. Only the post owner may delete it.
 	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
+	// GetPost returns a single post by id. Post details are public, so this
+	// endpoint does not require authentication.
+	GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostResponse, error)
 	// ListPosts returns all posts, newest first.
 	ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
@@ -119,6 +123,16 @@ func (c *blogServiceClient) DeletePost(ctx context.Context, in *DeletePostReques
 	return out, nil
 }
 
+func (c *blogServiceClient) GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPostResponse)
+	err := c.cc.Invoke(ctx, BlogService_GetPost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *blogServiceClient) ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPostsResponse)
@@ -155,6 +169,9 @@ type BlogServiceServer interface {
 	UpdatePost(context.Context, *UpdatePostRequest) (*UpdatePostResponse, error)
 	// DeletePost removes a post. Only the post owner may delete it.
 	DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error)
+	// GetPost returns a single post by id. Post details are public, so this
+	// endpoint does not require authentication.
+	GetPost(context.Context, *GetPostRequest) (*GetPostResponse, error)
 	// ListPosts returns all posts, newest first.
 	ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
@@ -186,6 +203,9 @@ func (UnimplementedBlogServiceServer) UpdatePost(context.Context, *UpdatePostReq
 }
 func (UnimplementedBlogServiceServer) DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeletePost not implemented")
+}
+func (UnimplementedBlogServiceServer) GetPost(context.Context, *GetPostRequest) (*GetPostResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPost not implemented")
 }
 func (UnimplementedBlogServiceServer) ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPosts not implemented")
@@ -322,6 +342,24 @@ func _BlogService_DeletePost_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlogService_GetPost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).GetPost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_GetPost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).GetPost(ctx, req.(*GetPostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BlogService_ListPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPostsRequest)
 	if err := dec(in); err != nil {
@@ -388,6 +426,10 @@ var BlogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePost",
 			Handler:    _BlogService_DeletePost_Handler,
+		},
+		{
+			MethodName: "GetPost",
+			Handler:    _BlogService_GetPost_Handler,
 		},
 		{
 			MethodName: "ListPosts",

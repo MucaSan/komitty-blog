@@ -239,6 +239,35 @@ func (s *Service) UpdatePost(ctx context.Context, req *blogv1.UpdatePostRequest)
 	}, nil
 }
 
+// GetPost returns a single post by id. Post details are public, so no
+// authentication is required.
+func (s *Service) GetPost(ctx context.Context, req *blogv1.GetPostRequest) (*blogv1.GetPostResponse, error) {
+	id := req.GetId()
+	if id == "" {
+		return nil, status.Error(codes.InvalidArgument, "post id is required")
+	}
+
+	var (
+		p         blogv1.Post
+		createdAt time.Time
+	)
+	err := s.pool.QueryRow(ctx, `
+		SELECT p.id, p.user_id, u.username, p.title, p.content, p.created_at
+		FROM posts p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.id = $1
+	`, id).Scan(&p.Id, &p.UserId, &p.Username, &p.Title, &p.Content, &createdAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, "post not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch post: %v", err)
+	}
+	p.CreatedAt = createdAt.UTC().Format(time.RFC3339)
+
+	return &blogv1.GetPostResponse{Post: &p}, nil
+}
+
 // DeletePost removes an existing post. Only the owner may delete it.
 func (s *Service) DeletePost(ctx context.Context, req *blogv1.DeletePostRequest) (*blogv1.DeletePostResponse, error) {
 	u, err := s.requireUser(ctx)

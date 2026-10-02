@@ -72,6 +72,16 @@ export async function listUserPosts(username: string): Promise<Post[]> {
   }
 }
 
+export async function getPost(id: string): Promise<Post | null> {
+  try {
+    const data = await request<{ post?: Post }>(`/v1/posts/${encodeURIComponent(id)}`);
+    return data.post ?? null;
+  } catch (err) {
+    if (isApiError(err)) throw err;
+    return mock.getPost(id);
+  }
+}
+
 export async function createUser(
   username: string,
   password: string,

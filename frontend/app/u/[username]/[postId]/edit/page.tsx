@@ -5,15 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { useTranslation } from "@/components/LanguageProvider";
-import { listUserPosts, updatePost, uploadImage } from "@/lib/api";
+import { getPost, updatePost, uploadImage } from "@/lib/api";
+import { clearDraft, loadDraft, useDraftAutosave } from "@/lib/draft";
 import { fileToBase64 } from "@/lib/file";
 import { getSession } from "@/lib/session";
 import type { Post, Session } from "@/lib/types";
 
 export default function EditPostPage() {
   const { t } = useTranslation();
-  const params = useParams<{ username: string; postId: string }>();
-  const username = params?.username ?? "";
+  const params = useParams<{ postId: string }>();
   const postId = params?.postId ?? "";
 
   const router = useRouter();
@@ -34,19 +34,28 @@ export default function EditPostPage() {
 
   useEffect(() => {
     setLoading(true);
-    listUserPosts(username)
-      .then((posts) => {
-        const p = posts.find((x) => x.id === postId) ?? null;
+    getPost(postId)
+      .then((p) => {
         setPost(p);
         if (p) {
-          setTitle(p.title);
-          setContent(p.content);
+          // Prefer an autosaved draft, which holds the latest unsaved changes.
+          const draft = loadDraft(`edit:${postId}`);
+          if (draft) {
+            setTitle(draft.title);
+            setContent(draft.content);
+          } else {
+            setTitle(p.title);
+            setContent(p.content);
+          }
           setIsEmpty(false);
         }
       })
       .catch(() => setPost(null))
       .finally(() => setLoading(false));
-  }, [username, postId]);
+  }, [postId]);
+
+  // Autosave in-progress changes every 60 seconds.
+  useDraftAutosave(!!session && !!post, `edit:${postId}`, () => ({ title, content }));
 
   async function handleUploadImage(file: File): Promise<string> {
     if (!session) throw new Error(t("errors.needLoginImages"));
@@ -62,6 +71,7 @@ export default function EditPostPage() {
     setSaving(true);
     try {
       await updatePost(post.id, title, content, session);
+      clearDraft(`edit:${postId}`);
       router.push(`/u/${post.username}/${post.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.somethingWentWrong"));
@@ -123,7 +133,7 @@ export default function EditPostPage() {
             onChange={(e) => setTitle(e.target.value)}
           />
           <RichTextEditor
-            initialContent={post.content}
+            initialContent={content}
             placeholder={t("newPost.contentPlaceholder")}
             onChange={(json, empty) => {
               setContent(json);
