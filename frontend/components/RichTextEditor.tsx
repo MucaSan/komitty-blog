@@ -28,7 +28,13 @@ type Range = { from: number; to: number };
 type SlashProps = { editor: any; range: Range };
 
 // Position and content of the keyboard-shortcut tooltip.
-type ToolbarTip = { label: string; keys: string; x: number; y: number };
+type ToolbarTip = { label: string; keys: string; x: number; y: number; below: boolean };
+
+/** Gap between the hovered button and the bubble, plus the size budget used to
+ *  keep the bubble on screen. Mirrors the `.toolbar-tip` rules in globals.css. */
+const TIP_GAP = 8;
+const TIP_HEIGHT = 30;
+const TIP_HALF_WIDTH = 140;
 
 type SlashItem = {
   title: string;
@@ -480,14 +486,26 @@ export function RichTextEditor({
       return;
     }
     const rect = button.getBoundingClientRect();
+    // The bubble sits above the button, except when there is not enough room
+    // there (the toolbar can scroll up underneath the sticky navbar), in which
+    // case it flips below. `x` is clamped so the bubble stays on screen.
+    const below = rect.top < TIP_GAP + TIP_HEIGHT;
+    const center = rect.left + rect.width / 2;
+    const maxX = Math.max(TIP_HALF_WIDTH, window.innerWidth - TIP_HALF_WIDTH);
     const next: ToolbarTip = {
       label: button.dataset.tooltip ?? "",
       keys: button.dataset.shortcut ?? "",
-      x: rect.left + rect.width / 2,
-      y: rect.top,
+      below,
+      x: Math.min(Math.max(center, TIP_HALF_WIDTH), maxX),
+      y: below ? rect.bottom : rect.top,
     };
     setTip((prev) =>
-      prev && prev.label === next.label && prev.keys === next.keys && prev.x === next.x && prev.y === next.y
+      prev &&
+      prev.label === next.label &&
+      prev.keys === next.keys &&
+      prev.below === next.below &&
+      prev.x === next.x &&
+      prev.y === next.y
         ? prev
         : next,
     );
@@ -562,7 +580,11 @@ export function RichTextEditor({
       </div>
 
       {tip && (
-        <div className="toolbar-tip" role="tooltip" style={{ top: tip.y, left: tip.x }}>
+        <div
+          className={tip.below ? "toolbar-tip toolbar-tip--below" : "toolbar-tip"}
+          role="tooltip"
+          style={{ top: tip.y, left: tip.x }}
+        >
           <span className="toolbar-tip__label">{tip.label}</span>
           {tip.keys ? <kbd className="toolbar-tip__kbd">{tip.keys}</kbd> : null}
         </div>
