@@ -74,12 +74,20 @@ export default function PostPage() {
 
     let cancelled = false;
     (async () => {
-      const [nextTitle, nextContent] = await Promise.all([
-        translateText(post.title, lang),
-        translateContent(post.content, lang),
-      ]);
-      if (!cancelled) {
-        setTranslation({ postId: post.id, title: nextTitle, content: nextContent });
+      try {
+        const [nextTitle, nextContent] = await Promise.all([
+          translateText(post.title, lang),
+          translateContent(post.content, lang),
+        ]);
+        if (!cancelled) {
+          setTranslation({ postId: post.id, title: nextTitle, content: nextContent });
+        }
+      } catch {
+        // Never leave the post stuck in the original language (or throw an
+        // unhandled rejection) if translating fails: fall back to the stored text.
+        if (!cancelled) {
+          setTranslation({ postId: post.id, title: post.title, content: post.content });
+        }
       }
     })();
 
