@@ -22,7 +22,20 @@ export function TableOfContents({
               activeId === h.id ? " toc__item--active" : ""
             }`}
           >
-            <a href={`#${h.id}`}>{h.text}</a>
+            <a
+              href={`#${h.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                const el = document.getElementById(h.id);
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+                } else {
+                  window.location.hash = h.id;
+                }
+              }}
+            >
+              {h.text}
+            </a>
           </li>
         ))}
       </ul>

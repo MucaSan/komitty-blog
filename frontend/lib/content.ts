@@ -16,7 +16,7 @@ export function contentToText(content: string): string {
   return content;
 }
 
-function parseDoc(content: string): any | null {
+export function parseDoc(content: string): any | null {
   const trimmed = content.trimStart();
   if (!trimmed.startsWith("{")) return null;
   try {

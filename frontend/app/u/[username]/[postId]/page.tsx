@@ -5,15 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TableOfContents } from "@/components/TableOfContents";
 import { useTranslation } from "@/components/LanguageProvider";
-import { deletePost, listUserPosts } from "@/lib/api";
+import { deletePost, getPost } from "@/lib/api";
 import { contentToHtml, contentToText, extractHeadings } from "@/lib/content";
 import { getSession } from "@/lib/session";
+import { translateContent, translateText } from "@/lib/translate";
 import type { Post, Session } from "@/lib/types";
 
 export default function PostPage() {
-  const { t } = useTranslation();
-  const params = useParams<{ username: string; postId: string }>();
-  const username = params?.username ?? "";
+  const { t, lang } = useTranslation();
+  const params = useParams<{ postId: string }>();
   const postId = params?.postId ?? "";
 
   const [post, setPost] = useState<Post | null>(null);
@@ -25,6 +25,10 @@ export default function PostPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [mounted, setMounted] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Portuguese translations of the title/body (only populated when lang === "pt").
+  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
 
   useEffect(() => {
     setSession(getSession());
@@ -46,33 +50,66 @@ export default function PostPage() {
 
   useEffect(() => {
     setLoading(true);
-    listUserPosts(username)
-      .then((posts) => setPost(posts.find((p) => p.id === postId) ?? null))
+    setPost(null);
+    getPost(postId)
+      .then(setPost)
       .catch(() => setPost(null))
       .finally(() => setLoading(false));
-  }, [username, postId]);
+  }, [postId]);
+
+  // Translate the post content on demand when the user is reading in Portuguese.
+  useEffect(() => {
+    if (!post || lang !== "pt") {
+      setTranslatedTitle(null);
+      setTranslatedContent(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const [nextTitle, nextContent] = await Promise.all([
+        translateText(post.title, "pt"),
+        translateContent(post.content, "pt"),
+      ]);
+      if (!cancelled) {
+        setTranslatedTitle(nextTitle);
+        setTranslatedContent(nextContent);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [post, lang]);
+
+  const title = translatedTitle ?? post?.title ?? "";
+  const content = translatedContent ?? post?.content ?? "";
 
   const headings = useMemo(
-    () => (post ? extractHeadings(post.content) : []),
-    [post],
+    () => (post ? extractHeadings(content) : []),
+    [post, content],
   );
 
   const readingMinutes = useMemo(() => {
     if (!post) return 1;
-    const words = contentToText(post.content)
+    const words = contentToText(content)
       .trim()
       .split(/\s+/)
       .filter(Boolean).length;
     return Math.max(1, Math.ceil(words / 200));
-  }, [post]);
+  }, [post, content]);
 
   // Assign anchor IDs to the rendered headings and track the active section.
   useEffect(() => {
     if (!contentRef.current || headings.length === 0) return;
 
-    const els = contentRef.current.querySelectorAll("h2, h3");
-    els.forEach((el, i) => {
-      if (headings[i]) el.id = headings[i].id;
+    const els = Array.from(contentRef.current.querySelectorAll("h2, h3"));
+    let idx = 0;
+    els.forEach((el) => {
+      const text = (el.textContent ?? "").trim();
+      if (!text) return; // matches extractHeadings, which skips empty headings
+      if (headings[idx]) el.id = headings[idx].id;
+      idx++;
     });
 
     const onScroll = () => {
@@ -90,7 +127,7 @@ export default function PostPage() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [headings]);
+  }, [headings, content]);
 
   if (loading) {
     return (
@@ -118,7 +155,7 @@ export default function PostPage() {
     <main className="container container--post">
       <article className="post">
         <header className="post__header">
-          <h1 className="post__title">{post.title}</h1>
+          <h1 className="post__title">{title}</h1>
           <div className="post__meta">
             <Link href={`/u/${post.username}`} className="post-entry__author">
               @{post.username}
@@ -132,7 +169,7 @@ export default function PostPage() {
           </div>
           {mounted && session && session.user.id === post.userId && (
             <div className="post__actions">
-              <Link href={`/u/${post.username}/${post.id}/edit`} className="btn btn--pill">
+              <Link href={`/u/${post.username}/${post.id}/edit`} className="btn btn--pill btn--pill-blue">
                 {t("post.edit")}
               </Link>
               <button
@@ -150,7 +187,7 @@ export default function PostPage() {
           <div
             ref={contentRef}
             className="post__content"
-            dangerouslySetInnerHTML={{ __html: contentToHtml(post.content) }}
+            dangerouslySetInnerHTML={{ __html: contentToHtml(content) }}
           />
           <TableOfContents headings={headings} activeId={activeId} />
         </div>

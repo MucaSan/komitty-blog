@@ -95,6 +95,10 @@ export function listUserPosts(username: string): Post[] {
   return newestFirst(getPosts().filter((p) => p.username === username));
 }
 
+export function getPost(id: string): Post | null {
+  return getPosts().find((p) => p.id === id) ?? null;
+}
+
 export function createUser(username: string, password: string): Session {
   const users = getUsers();
   if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
