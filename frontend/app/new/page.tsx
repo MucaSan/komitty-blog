@@ -53,7 +53,7 @@ export default function NewPostPage() {
     try {
       const post = await createPost(title, content, session);
       clearDraft("new");
-      router.push(`/u/${post.username}/${post.id}`);
+      router.push(`/u/${encodeURIComponent(post.username)}/${post.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.somethingWentWrong"));
     } finally {

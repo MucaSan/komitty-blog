@@ -72,7 +72,7 @@ export default function EditPostPage() {
     try {
       await updatePost(post.id, title, content, session);
       clearDraft(`edit:${postId}`);
-      router.push(`/u/${post.username}/${post.id}`);
+      router.push(`/u/${encodeURIComponent(post.username)}/${post.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.somethingWentWrong"));
     } finally {
@@ -150,7 +150,11 @@ export default function EditPostPage() {
             >
               {saving ? t("editPost.saving") : t("editPost.save")}
             </button>
-            <Link href={`/u/${post.username}/${post.id}`} className="btn btn--pill">
+            <Link
+              href={`/u/${encodeURIComponent(post.username)}/${post.id}`}
+              className="btn btn--danger"
+              style={{ padding: "6px 16px" }}
+            >
               {t("editPost.cancel")}
             </Link>
           </div>

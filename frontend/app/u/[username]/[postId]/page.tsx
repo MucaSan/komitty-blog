@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TableOfContents } from "@/components/TableOfContents";
 import { useTranslation } from "@/components/LanguageProvider";
 import { deletePost, getPost } from "@/lib/api";
@@ -19,16 +19,20 @@ export default function PostPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [mounted, setMounted] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Portuguese translations of the title/body (only populated when lang === "pt").
-  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
-  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  // Translation of the title/body for the currently selected language. Keyed by
+  // post id so a stale translation is never shown while a new post (or a new
+  // language) is being fetched.
+  const [translation, setTranslation] = useState<{
+    postId: string;
+    title: string;
+    content: string;
+  } | null>(null);
 
   useEffect(() => {
     setSession(getSession());
@@ -57,23 +61,25 @@ export default function PostPage() {
       .finally(() => setLoading(false));
   }, [postId]);
 
-  // Translate the post content on demand when the user is reading in Portuguese.
+  // Always translate the post to the selected language: choosing EN turns a
+  // Portuguese post into English and choosing PT does the reverse. Text that is
+  // already in the target language is returned unchanged by translateText().
+  // Editing a post is unaffected: the editor keeps the language it was written
+  // in (see the edit page, which never translates the stored content).
   useEffect(() => {
-    if (!post || lang !== "pt") {
-      setTranslatedTitle(null);
-      setTranslatedContent(null);
+    if (!post) {
+      setTranslation(null);
       return;
     }
 
     let cancelled = false;
     (async () => {
       const [nextTitle, nextContent] = await Promise.all([
-        translateText(post.title, "pt"),
-        translateContent(post.content, "pt"),
+        translateText(post.title, lang),
+        translateContent(post.content, lang),
       ]);
       if (!cancelled) {
-        setTranslatedTitle(nextTitle);
-        setTranslatedContent(nextContent);
+        setTranslation({ postId: post.id, title: nextTitle, content: nextContent });
       }
     })();
 
@@ -82,8 +88,9 @@ export default function PostPage() {
     };
   }, [post, lang]);
 
-  const title = translatedTitle ?? post?.title ?? "";
-  const content = translatedContent ?? post?.content ?? "";
+  const activeTranslation = translation?.postId === post?.id ? translation : null;
+  const title = activeTranslation?.title ?? post?.title ?? "";
+  const content = activeTranslation?.content ?? post?.content ?? "";
 
   const headings = useMemo(
     () => (post ? extractHeadings(content) : []),
@@ -99,18 +106,11 @@ export default function PostPage() {
     return Math.max(1, Math.ceil(words / 200));
   }, [post, content]);
 
-  // Assign anchor IDs to the rendered headings and track the active section.
+  // Track which heading is currently in view for the table of contents. The
+  // anchor ids are baked into the rendered HTML by contentToHtml(), so there is
+  // no post-render DOM mutation to rely on here.
   useEffect(() => {
-    if (!contentRef.current || headings.length === 0) return;
-
-    const els = Array.from(contentRef.current.querySelectorAll("h2, h3"));
-    let idx = 0;
-    els.forEach((el) => {
-      const text = (el.textContent ?? "").trim();
-      if (!text) return; // matches extractHeadings, which skips empty headings
-      if (headings[idx]) el.id = headings[idx].id;
-      idx++;
-    });
+    if (headings.length === 0) return;
 
     const onScroll = () => {
       const current = headings
@@ -127,7 +127,7 @@ export default function PostPage() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [headings, content]);
+  }, [headings]);
 
   if (loading) {
     return (
@@ -157,7 +157,7 @@ export default function PostPage() {
         <header className="post__header">
           <h1 className="post__title">{title}</h1>
           <div className="post__meta">
-            <Link href={`/u/${post.username}`} className="post-entry__author">
+            <Link href={`/u/${encodeURIComponent(post.username)}`} className="post-entry__author">
               @{post.username}
             </Link>
             <span>·</span>
@@ -169,7 +169,7 @@ export default function PostPage() {
           </div>
           {mounted && session && session.user.id === post.userId && (
             <div className="post__actions">
-              <Link href={`/u/${post.username}/${post.id}/edit`} className="btn btn--pill btn--pill-blue">
+              <Link href={`/u/${encodeURIComponent(post.username)}/${post.id}/edit`} className="btn btn--pill btn--pill-blue">
                 {t("post.edit")}
               </Link>
               <button
@@ -185,7 +185,6 @@ export default function PostPage() {
 
         <div className="post__body">
           <div
-            ref={contentRef}
             className="post__content"
             dangerouslySetInnerHTML={{ __html: contentToHtml(content) }}
           />

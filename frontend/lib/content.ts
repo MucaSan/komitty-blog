@@ -6,8 +6,30 @@ import { editorExtensions } from "./editorExtensions";
 
 export function contentToHtml(content: string): string {
   const doc = parseDoc(content);
-  if (doc) return generateHTML(doc, editorExtensions);
-  return plainTextToHtml(content);
+  if (!doc) return plainTextToHtml(content);
+  return addHeadingAnchors(generateHTML(doc, editorExtensions), extractHeadings(content));
+}
+
+// Injects stable `id` attributes into the rendered H2/H3 elements so the table
+// of contents can link straight to each section. The slugs come from the same
+// helper that builds the TOC (extractHeadings), so they always line up. Baking
+// the ids into the HTML means the anchors exist as soon as the post renders,
+// instead of relying on a post-render DOM mutation.
+export function addHeadingAnchors(html: string, headings: Heading[]): string {
+  if (headings.length === 0) return html;
+
+  let index = 0;
+  return html.replace(
+    /<(h2|h3)([^>]*)>([\s\S]*?)<\/\1>/gi,
+    (match, tag: string, attrs: string, inner: string) => {
+      // Keep in sync with extractHeadings(), which skips empty headings.
+      const text = inner.replace(/<[^>]*>/g, "").trim();
+      if (!text) return match;
+      const heading = headings[index++];
+      if (!heading || /\bid\s*=/.test(attrs)) return match;
+      return `<${tag}${attrs} id="${heading.id}">${inner}</${tag}>`;
+    },
+  );
 }
 
 export function contentToText(content: string): string {

@@ -25,13 +25,14 @@ export function TableOfContents({
             <a
               href={`#${h.id}`}
               onClick={(e) => {
-                e.preventDefault();
                 const el = document.getElementById(h.id);
-                if (el) {
-                  el.scrollIntoView({ behavior: "smooth", block: "start" });
-                } else {
-                  window.location.hash = h.id;
-                }
+                // If the anchor is missing, let the browser handle the click.
+                if (!el) return;
+                e.preventDefault();
+                // Offset by the sticky navbar so the heading is fully visible.
+                const top = el.getBoundingClientRect().top + window.scrollY - 84;
+                window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+                window.history.replaceState(null, "", `#${h.id}`);
               }}
             >
               {h.text}

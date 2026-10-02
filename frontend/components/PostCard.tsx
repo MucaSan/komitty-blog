@@ -10,25 +10,28 @@ export function PostCard({ post }: { post: Post }) {
   const [title, setTitle] = useState(post.title);
   const [excerpt, setExcerpt] = useState(() => contentToText(post.content));
 
-  // Translate the card title/excerpt when the user is reading in Portuguese.
+  // Always translate the card to the selected language: choosing EN turns a
+  // Portuguese post into English and choosing PT does the reverse. Text that is
+  // already in the target language is returned unchanged by translateText().
   useEffect(() => {
-    if (lang !== "pt") {
-      setTitle(post.title);
-      setExcerpt(contentToText(post.content));
-      return;
-    }
-
     let cancelled = false;
+    const originalExcerpt = contentToText(post.content);
+
+    // Show the original immediately while the translation is in flight.
+    setTitle(post.title);
+    setExcerpt(originalExcerpt);
+
     (async () => {
       const [nextTitle, nextExcerpt] = await Promise.all([
-        translateText(post.title, "pt"),
-        translateText(contentToText(post.content), "pt"),
+        translateText(post.title, lang),
+        translateText(originalExcerpt, lang),
       ]);
       if (!cancelled) {
         setTitle(nextTitle);
         setExcerpt(nextExcerpt);
       }
     })();
+
     return () => {
       cancelled = true;
     };
@@ -43,17 +46,17 @@ export function PostCard({ post }: { post: Post }) {
   return (
     <article className="post-entry">
       <h2 className="post-entry__title">
-        <Link href={`/u/${post.username}/${post.id}`}>{title}</Link>
+        <Link href={`/u/${encodeURIComponent(post.username)}/${post.id}`}>{title}</Link>
       </h2>
       <div className="post-entry__meta">
-        <Link href={`/u/${post.username}`} className="post-entry__author">
+        <Link href={`/u/${encodeURIComponent(post.username)}`} className="post-entry__author">
           @{post.username}
         </Link>
         <span>·</span>
         <time>{date}</time>
       </div>
       <p className="post-entry__excerpt">{excerpt}</p>
-      <Link href={`/u/${post.username}/${post.id}`} className="post-entry__more">
+      <Link href={`/u/${encodeURIComponent(post.username)}/${post.id}`} className="post-entry__more">
         {t("post.readMore")} →
       </Link>
     </article>
