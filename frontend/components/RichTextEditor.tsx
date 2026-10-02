@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -261,8 +262,38 @@ export function RichTextEditor({
   initialContent?: string;
 }) {
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
+  const [colorMenuPos, setColorMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const colorWrapRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslation();
   currentT = t;
+
+  // The toolbar scrolls horizontally, so the color picker is positioned with
+  // `position: fixed` and closed whenever the page or toolbar scrolls.
+  useEffect(() => {
+    if (!colorMenuOpen) return;
+    const close = () => setColorMenuOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [colorMenuOpen]);
+
+  const toggleColorMenu = () => {
+    if (colorMenuOpen) {
+      setColorMenuOpen(false);
+      return;
+    }
+    const rect = colorWrapRef.current?.getBoundingClientRect();
+    if (rect) {
+      setColorMenuPos({
+        top: rect.bottom + 6,
+        left: Math.min(rect.left, Math.max(8, window.innerWidth - 220)),
+      });
+    }
+    setColorMenuOpen(true);
+  };
 
   const editor = useEditor({
     extensions: [
@@ -406,10 +437,10 @@ export function RichTextEditor({
           <ToolbarButton icon={ICONS.code} title={t("editor.inlineCode")} active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()} />
           <ToolbarButton icon={ICONS.link} title={t("editor.link")} active={editor.isActive("link")} onClick={setLink} />
           <ToolbarButton icon={ICONS.highlight} title={t("editor.highlight")} active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} />
-          <div className="toolbar__color">
-            <ToolbarButton label={<span className="color-swatch">A</span>} title={t("editor.textColor")} onClick={() => setColorMenuOpen((o) => !o)} />
-            {colorMenuOpen && (
-              <div className="color-menu">
+          <div className="toolbar__color" ref={colorWrapRef}>
+            <ToolbarButton label={<span className="color-swatch">A</span>} title={t("editor.textColor")} onClick={toggleColorMenu} />
+            {colorMenuOpen && colorMenuPos && (
+              <div className="color-menu" style={{ top: colorMenuPos.top, left: colorMenuPos.left }}>
                 {COLORS.map((c) => (
                   <button key={c.label} type="button" className="color-menu__item" title={c.label} onClick={() => setColor(c.value)}>
                     <span className="color-menu__dot" style={{ background: c.value || "var(--text)" }} />

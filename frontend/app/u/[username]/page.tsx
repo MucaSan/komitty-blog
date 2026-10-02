@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PostCard } from "@/components/PostCard";
 import { useTranslation } from "@/components/LanguageProvider";
 import { listUserPosts } from "@/lib/api";
@@ -10,7 +10,17 @@ import type { Post } from "@/lib/types";
 export default function UserPage() {
   const { t } = useTranslation();
   const params = useParams<{ username: string }>();
-  const username = params?.username ?? "";
+  const rawUsername = params?.username ?? "";
+
+  // Next.js hands back the raw (still percent-encoded) URL segment, so decode it
+  // before using it as a username (e.g. "Fang%20Yuan" -> "Fang Yuan").
+  const username = useMemo(() => {
+    try {
+      return decodeURIComponent(rawUsername);
+    } catch {
+      return rawUsername;
+    }
+  }, [rawUsername]);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);

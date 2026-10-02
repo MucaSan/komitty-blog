@@ -28,6 +28,8 @@ export async function translateText(text: string, target: Language): Promise<str
     );
     if (!res.ok) throw new Error(`translation failed (${res.status})`);
     const data = await res.json();
+    // data[2] is the source language Google auto-detected for the text.
+    const detected = typeof data?.[2] === "string" ? data[2] : "";
     const translated = Array.isArray(data?.[0])
       ? data[0]
           .map((segment: unknown) =>
@@ -35,7 +37,10 @@ export async function translateText(text: string, target: Language): Promise<str
           )
           .join("")
       : "";
-    const result = translated || trimmed;
+    // Always rely on the browser translation, in both directions (EN->PT and
+    // PT->EN). When the text is already in the target language we keep the
+    // original so we never rewrite content that does not need translating.
+    const result = !translated || detected === target ? trimmed : translated;
     cache.set(key, result);
     return result;
   } catch {

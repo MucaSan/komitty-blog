@@ -45,7 +45,7 @@ export function Navbar() {
               <Link href="/new" className="navbar__link">
                 {t("nav.newPost")}
               </Link>
-              <Link href={`/u/${session.user.username}`} className="navbar__link">
+              <Link href={`/u/${encodeURIComponent(session.user.username)}`} className="navbar__link">
                 @{session.user.username}
               </Link>
               <button className="btn btn--danger" style={{ padding: "6px 16px" }} onClick={handleLogout}>

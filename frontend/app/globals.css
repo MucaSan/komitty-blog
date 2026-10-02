@@ -781,19 +781,31 @@ a {
 }
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.toolbar::-webkit-scrollbar {
+  height: 6px;
+}
+.toolbar::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
 }
 .toolbar__group {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding-right: 8px;
-  margin-right: 8px;
+  padding-right: 6px;
+  margin-right: 6px;
   border-right: 1px solid var(--border-subtle);
+  flex: 0 0 auto;
 }
 .toolbar__group:last-child {
   border-right: none;
@@ -804,8 +816,9 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 30px;
-  height: 30px;
+  flex: 0 0 auto;
+  min-width: 28px;
+  height: 28px;
   padding: 0 6px;
   background: transparent;
   border: none;
@@ -830,10 +843,10 @@ a {
   text-decoration: underline;
   text-decoration-thickness: 2px;
 }
+/* Rendered with position:fixed (see RichTextEditor) so it is not clipped by the
+   horizontally scrollable toolbar. */
 .color-menu {
-  position: absolute;
-  top: 36px;
-  left: 0;
+  position: fixed;
   z-index: 50;
   display: flex;
   gap: 6px;
