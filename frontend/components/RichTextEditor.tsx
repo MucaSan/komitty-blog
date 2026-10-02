@@ -158,15 +158,62 @@ const COLORS = [
   { label: "Purple", value: "#a855f7" },
 ];
 
+function Icon({ d }: { d: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
+const ICONS = {
+  bold: "M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8",
+  italic: "M19 4h-9M14 20H5M15 4L9 20",
+  underline: "M6 4v6a6 6 0 0 0 12 0V4M4 20h16",
+  strike: "M16 4H9a3 3 0 0 0-2.83 4M14 12a4 4 0 0 1 0 8H6M4 12h16",
+  code: "M16 18l6-6-6-6M8 6l-6 6 6 6",
+  link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+  image: "M3 3h18v18H3zM8.5 8.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM21 15l-5-5L5 21",
+  highlight: "M9 11l-6 6v3h9l3-3M12 4l8 8",
+  bulletList: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+  orderedList: "M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1",
+  quote: "M10 11H6.2a2 2 0 0 0-2 1.8A4 4 0 0 0 8 19a2 2 0 0 0 2-2v-6zm8 0h-3.8a2 2 0 0 0-2 1.8A4 4 0 0 0 16 19a2 2 0 0 0 2-2v-6z",
+  codeBlock: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M10 12l-2 2 2 2M14 12l2 2-2 2",
+  divider: "M5 12h14",
+};
+
+function parseInitialContent(content?: string): string | object {
+  if (!content) return "";
+  const trimmed = content.trimStart();
+  if (!trimmed.startsWith("{")) return "";
+  try {
+    return JSON.parse(content);
+  } catch {
+    return "";
+  }
+}
+
 function ToolbarButton({
   active,
   onClick,
+  icon,
   label,
   title,
 }: {
   active?: boolean;
   onClick: () => void;
-  label: ReactNode;
+  icon?: string;
+  label?: ReactNode;
   title?: string;
 }) {
   return (
@@ -177,7 +224,7 @@ function ToolbarButton({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
     >
-      {label}
+      {icon ? <Icon d={icon} /> : label}
     </button>
   );
 }
@@ -186,10 +233,12 @@ export function RichTextEditor({
   onChange,
   placeholder,
   onUploadImage,
+  initialContent,
 }: {
   onChange?: (json: string, isEmpty: boolean) => void;
   placeholder?: string;
   onUploadImage?: (file: File) => Promise<string>;
+  initialContent?: string;
 }) {
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
 
@@ -201,7 +250,7 @@ export function RichTextEditor({
       }),
       SlashCommand,
     ],
-    content: "",
+    content: parseInitialContent(initialContent),
     editorProps: {
       attributes: { class: "richtext__content" },
     },
@@ -234,23 +283,71 @@ export function RichTextEditor({
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }, [editor]);
 
+  const uploadAndInsert = useCallback(
+    (file: File, pos?: number) => {
+      if (!editor || !onUploadImage) return;
+      onUploadImage(file)
+        .then((url) => {
+          const insertAt = pos ?? editor.state.selection.from;
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(insertAt, { type: "image", attrs: { src: url } })
+            .run();
+        })
+        .catch((err) => {
+          window.alert(err instanceof Error ? err.message : "Image upload failed");
+        });
+    },
+    [editor, onUploadImage],
+  );
+
   const addImage = useCallback(() => {
     if (!editor || !onUploadImage) return;
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/png,image/jpeg,image/gif,image/webp";
-    input.onchange = async () => {
+    input.onchange = () => {
       const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const url = await onUploadImage(file);
-        editor.chain().focus().setImage({ src: url }).run();
-      } catch (err) {
-        window.alert(err instanceof Error ? err.message : "Image upload failed");
-      }
+      if (file) uploadAndInsert(file);
     };
     input.click();
-  }, [editor, onUploadImage]);
+  }, [editor, onUploadImage, uploadAndInsert]);
+
+  // Drag-and-drop image upload.
+  useEffect(() => {
+    if (!editor) return;
+    const el = editor.view.dom;
+    const onDragOver = (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes("Files")) {
+        e.preventDefault();
+        el.classList.add("richtext__content--dragging");
+      }
+    };
+    const onDragLeave = (e: DragEvent) => {
+      if (e.relatedTarget === null) {
+        el.classList.remove("richtext__content--dragging");
+      }
+    };
+    const onDrop = (e: DragEvent) => {
+      el.classList.remove("richtext__content--dragging");
+      const files = e.dataTransfer?.files;
+      if (!files || files.length === 0) return;
+      const file = files[0];
+      if (!file.type.startsWith("image/")) return;
+      e.preventDefault();
+      const pos = editor.view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+      uploadAndInsert(file, pos);
+    };
+    el.addEventListener("dragover", onDragOver);
+    el.addEventListener("dragleave", onDragLeave);
+    el.addEventListener("drop", onDrop);
+    return () => {
+      el.removeEventListener("dragover", onDragOver);
+      el.removeEventListener("dragleave", onDragLeave);
+      el.removeEventListener("drop", onDrop);
+    };
+  }, [editor, uploadAndInsert]);
 
   if (!editor) return null;
 
@@ -273,13 +370,13 @@ export function RichTextEditor({
         </div>
 
         <div className="toolbar__group">
-          <ToolbarButton label={<b>B</b>} title="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
-          <ToolbarButton label={<i>I</i>} title="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
-          <ToolbarButton label={<u>U</u>} title="Underline" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
-          <ToolbarButton label={<s>S</s>} title="Strikethrough" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} />
-          <ToolbarButton label="code" title="Inline code" active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()} />
-          <ToolbarButton label="🔗" title="Link" active={editor.isActive("link")} onClick={setLink} />
-          <ToolbarButton label="🖍" title="Highlight" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} />
+          <ToolbarButton icon={ICONS.bold} title="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
+          <ToolbarButton icon={ICONS.italic} title="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
+          <ToolbarButton icon={ICONS.underline} title="Underline" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
+          <ToolbarButton icon={ICONS.strike} title="Strikethrough" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} />
+          <ToolbarButton icon={ICONS.code} title="Inline code" active={editor.isActive("code")} onClick={() => editor.chain().focus().toggleCode().run()} />
+          <ToolbarButton icon={ICONS.link} title="Link" active={editor.isActive("link")} onClick={setLink} />
+          <ToolbarButton icon={ICONS.highlight} title="Highlight" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} />
           <div className="toolbar__color">
             <ToolbarButton label={<span className="color-swatch">A</span>} title="Text color" onClick={() => setColorMenuOpen((o) => !o)} />
             {colorMenuOpen && (
@@ -295,12 +392,12 @@ export function RichTextEditor({
         </div>
 
         <div className="toolbar__group">
-          <ToolbarButton label="• List" title="Bullet list" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} />
-          <ToolbarButton label="1. List" title="Ordered list" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
-          <ToolbarButton label="❝" title="Quote" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
-          <ToolbarButton label="</>" title="Code block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
-          <ToolbarButton label="—" title="Divider" onClick={() => editor.chain().focus().setHorizontalRule().run()} />
-          <ToolbarButton label="🖼" title="Image" onClick={addImage} />
+          <ToolbarButton icon={ICONS.bulletList} title="Bullet list" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} />
+          <ToolbarButton icon={ICONS.orderedList} title="Ordered list" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} />
+          <ToolbarButton icon={ICONS.quote} title="Quote" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} />
+          <ToolbarButton icon={ICONS.codeBlock} title="Code block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} />
+          <ToolbarButton icon={ICONS.divider} title="Divider" onClick={() => editor.chain().focus().setHorizontalRule().run()} />
+          <ToolbarButton icon={ICONS.image} title="Image" onClick={addImage} />
         </div>
       </div>
 

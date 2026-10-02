@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TableOfContents } from "@/components/TableOfContents";
-import { listUserPosts } from "@/lib/api";
+import { deletePost, listUserPosts } from "@/lib/api";
 import { contentToHtml, contentToText, extractHeadings } from "@/lib/content";
-import type { Post } from "@/lib/types";
+import { getSession } from "@/lib/session";
+import type { Post, Session } from "@/lib/types";
 
 export default function PostPage() {
   const params = useParams<{ username: string; postId: string }>();
@@ -17,6 +18,29 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
+  const [session, setSession] = useState<Session | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    setSession(getSession());
+    setMounted(true);
+  }, []);
+
+  async function handleDelete() {
+    if (!session || !post) return;
+    if (!window.confirm("Delete this post? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      await deletePost(post.id, session);
+      router.push("/");
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Failed to delete post");
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -102,6 +126,20 @@ export default function PostPage() {
             <span>·</span>
             <span>{readingMinutes} min read</span>
           </div>
+          {mounted && session && session.user.id === post.userId && (
+            <div className="post__actions">
+              <Link href={`/u/${post.username}/${post.id}/edit`} className="btn btn--pill">
+                Edit
+              </Link>
+              <button
+                className="btn btn--danger"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          )}
         </header>
 
         <div className="post__body">

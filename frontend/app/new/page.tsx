@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { createPost, uploadImage } from "@/lib/api";
+import { fileToBase64 } from "@/lib/file";
 import { getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
@@ -96,13 +97,4 @@ export default function NewPostPage() {
       </div>
     </main>
   );
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? "").split(",")[1] ?? "");
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
 }

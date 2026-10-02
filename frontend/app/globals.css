@@ -528,6 +528,11 @@ a {
   font-size: 14px;
   color: var(--text-muted);
 }
+.post__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
 .post__body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
@@ -854,6 +859,11 @@ a {
 }
 .richtext__content img.ProseMirror-selectednode {
   outline: 2px solid var(--primary);
+}
+.richtext__content--dragging {
+  outline: 2px dashed var(--primary);
+  outline-offset: -8px;
+  background: rgba(7, 143, 228, 0.06);
 }
 
 .slash-menu {

@@ -23,6 +23,8 @@ const (
 	BlogService_Login_FullMethodName         = "/blog.v1.BlogService/Login"
 	BlogService_CreatePost_FullMethodName    = "/blog.v1.BlogService/CreatePost"
 	BlogService_UploadImage_FullMethodName   = "/blog.v1.BlogService/UploadImage"
+	BlogService_UpdatePost_FullMethodName    = "/blog.v1.BlogService/UpdatePost"
+	BlogService_DeletePost_FullMethodName    = "/blog.v1.BlogService/DeletePost"
 	BlogService_ListPosts_FullMethodName     = "/blog.v1.BlogService/ListPosts"
 	BlogService_ListUserPosts_FullMethodName = "/blog.v1.BlogService/ListUserPosts"
 )
@@ -39,6 +41,10 @@ type BlogServiceClient interface {
 	CreatePost(ctx context.Context, in *CreatePostRequest, opts ...grpc.CallOption) (*CreatePostResponse, error)
 	// UploadImage stores an image and returns its public URL.
 	UploadImage(ctx context.Context, in *UploadImageRequest, opts ...grpc.CallOption) (*UploadImageResponse, error)
+	// UpdatePost edits a post. Only the post owner may update it.
+	UpdatePost(ctx context.Context, in *UpdatePostRequest, opts ...grpc.CallOption) (*UpdatePostResponse, error)
+	// DeletePost removes a post. Only the post owner may delete it.
+	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
 	// ListPosts returns all posts, newest first.
 	ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
@@ -93,6 +99,26 @@ func (c *blogServiceClient) UploadImage(ctx context.Context, in *UploadImageRequ
 	return out, nil
 }
 
+func (c *blogServiceClient) UpdatePost(ctx context.Context, in *UpdatePostRequest, opts ...grpc.CallOption) (*UpdatePostResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdatePostResponse)
+	err := c.cc.Invoke(ctx, BlogService_UpdatePost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *blogServiceClient) DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeletePostResponse)
+	err := c.cc.Invoke(ctx, BlogService_DeletePost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *blogServiceClient) ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPostsResponse)
@@ -125,6 +151,10 @@ type BlogServiceServer interface {
 	CreatePost(context.Context, *CreatePostRequest) (*CreatePostResponse, error)
 	// UploadImage stores an image and returns its public URL.
 	UploadImage(context.Context, *UploadImageRequest) (*UploadImageResponse, error)
+	// UpdatePost edits a post. Only the post owner may update it.
+	UpdatePost(context.Context, *UpdatePostRequest) (*UpdatePostResponse, error)
+	// DeletePost removes a post. Only the post owner may delete it.
+	DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error)
 	// ListPosts returns all posts, newest first.
 	ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
@@ -150,6 +180,12 @@ func (UnimplementedBlogServiceServer) CreatePost(context.Context, *CreatePostReq
 }
 func (UnimplementedBlogServiceServer) UploadImage(context.Context, *UploadImageRequest) (*UploadImageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadImage not implemented")
+}
+func (UnimplementedBlogServiceServer) UpdatePost(context.Context, *UpdatePostRequest) (*UpdatePostResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdatePost not implemented")
+}
+func (UnimplementedBlogServiceServer) DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeletePost not implemented")
 }
 func (UnimplementedBlogServiceServer) ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPosts not implemented")
@@ -250,6 +286,42 @@ func _BlogService_UploadImage_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlogService_UpdatePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).UpdatePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_UpdatePost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).UpdatePost(ctx, req.(*UpdatePostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BlogService_DeletePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).DeletePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_DeletePost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).DeletePost(ctx, req.(*DeletePostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _BlogService_ListPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPostsRequest)
 	if err := dec(in); err != nil {
@@ -308,6 +380,14 @@ var BlogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadImage",
 			Handler:    _BlogService_UploadImage_Handler,
+		},
+		{
+			MethodName: "UpdatePost",
+			Handler:    _BlogService_UpdatePost_Handler,
+		},
+		{
+			MethodName: "DeletePost",
+			Handler:    _BlogService_DeletePost_Handler,
 		},
 		{
 			MethodName: "ListPosts",

@@ -128,3 +128,24 @@ export async function createPost(title: string, content: string, session: Sessio
     return mock.createPost(title, content, session);
   }
 }
+
+export async function updatePost(
+  id: string,
+  title: string,
+  content: string,
+  session: Session,
+): Promise<Post> {
+  const data = await request<{ post: Post }>(`/v1/posts/${id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${session.token}` },
+    body: JSON.stringify({ title, content }),
+  });
+  return data.post;
+}
+
+export async function deletePost(id: string, session: Session): Promise<void> {
+  await request<unknown>(`/v1/posts/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${session.token}` },
+  });
+}

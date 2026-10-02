@@ -33,16 +33,11 @@ func New(pool *pgxpool.Pool, jwtSecret string) *Service {
 
 // CreateUser registers a new account. Only the prime user may create accounts.
 func (s *Service) CreateUser(ctx context.Context, req *blogv1.CreateUserRequest) (*blogv1.CreateUserResponse, error) {
-	claims, err := s.authenticate(ctx)
+	u, err := s.requireUser(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	prime, err := s.isPrime(ctx, claims.Subject)
-	if err != nil {
-		return nil, err
-	}
-	if !prime {
+	if !u.isPrime {
 		return nil, status.Error(codes.PermissionDenied, "only the prime user can create accounts")
 	}
 
@@ -121,7 +116,7 @@ func (s *Service) Login(ctx context.Context, req *blogv1.LoginRequest) (*blogv1.
 
 // CreatePost publishes a new post for the authenticated user.
 func (s *Service) CreatePost(ctx context.Context, req *blogv1.CreatePostRequest) (*blogv1.CreatePostResponse, error) {
-	claims, err := s.authenticate(ctx)
+	u, err := s.requireUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +134,7 @@ func (s *Service) CreatePost(ctx context.Context, req *blogv1.CreatePostRequest)
 	var createdAt time.Time
 	err = s.pool.QueryRow(ctx,
 		`INSERT INTO posts (id, user_id, title, content) VALUES ($1, $2, $3, $4) RETURNING created_at`,
-		id, claims.Subject, title, content,
+		id, u.id, title, content,
 	).Scan(&createdAt)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create post: %v", err)
@@ -148,8 +143,8 @@ func (s *Service) CreatePost(ctx context.Context, req *blogv1.CreatePostRequest)
 	return &blogv1.CreatePostResponse{
 		Post: &blogv1.Post{
 			Id:        id,
-			UserId:    claims.Subject,
-			Username:  claims.Username,
+			UserId:    u.id,
+			Username:  u.username,
 			Title:     title,
 			Content:   content,
 			CreatedAt: createdAt.UTC().Format(time.RFC3339),
@@ -159,7 +154,7 @@ func (s *Service) CreatePost(ctx context.Context, req *blogv1.CreatePostRequest)
 
 // UploadImage stores an uploaded image and returns its public URL.
 func (s *Service) UploadImage(ctx context.Context, req *blogv1.UploadImageRequest) (*blogv1.UploadImageResponse, error) {
-	claims, err := s.authenticate(ctx)
+	u, err := s.requireUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -181,13 +176,98 @@ func (s *Service) UploadImage(ctx context.Context, req *blogv1.UploadImageReques
 	id := uuid.NewString()
 	_, err = s.pool.Exec(ctx,
 		`INSERT INTO images (id, user_id, content_type, size, data) VALUES ($1, $2, $3, $4, $5)`,
-		id, claims.Subject, contentType, len(data), data,
+		id, u.id, contentType, len(data), data,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to store image: %v", err)
 	}
 
 	return &blogv1.UploadImageResponse{Id: id, Url: "/v1/images/" + id}, nil
+}
+
+// UpdatePost edits an existing post. Only the owner may update it.
+func (s *Service) UpdatePost(ctx context.Context, req *blogv1.UpdatePostRequest) (*blogv1.UpdatePostResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	id := req.GetId()
+	if id == "" {
+		return nil, status.Error(codes.InvalidArgument, "post id is required")
+	}
+
+	var ownerID string
+	err = s.pool.QueryRow(ctx, `SELECT user_id FROM posts WHERE id = $1`, id).Scan(&ownerID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, "post not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch post: %v", err)
+	}
+	if ownerID != u.id {
+		return nil, status.Error(codes.PermissionDenied, "you can only edit your own posts")
+	}
+
+	title := strings.TrimSpace(req.GetTitle())
+	content := req.GetContent()
+	if title == "" {
+		return nil, status.Error(codes.InvalidArgument, "title is required")
+	}
+	if strings.TrimSpace(content) == "" {
+		return nil, status.Error(codes.InvalidArgument, "content is required")
+	}
+
+	var createdAt time.Time
+	err = s.pool.QueryRow(ctx,
+		`UPDATE posts SET title = $1, content = $2 WHERE id = $3 RETURNING created_at`,
+		title, content, id,
+	).Scan(&createdAt)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update post: %v", err)
+	}
+
+	return &blogv1.UpdatePostResponse{
+		Post: &blogv1.Post{
+			Id:        id,
+			UserId:    u.id,
+			Username:  u.username,
+			Title:     title,
+			Content:   content,
+			CreatedAt: createdAt.UTC().Format(time.RFC3339),
+		},
+	}, nil
+}
+
+// DeletePost removes an existing post. Only the owner may delete it.
+func (s *Service) DeletePost(ctx context.Context, req *blogv1.DeletePostRequest) (*blogv1.DeletePostResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	id := req.GetId()
+	if id == "" {
+		return nil, status.Error(codes.InvalidArgument, "post id is required")
+	}
+
+	var ownerID string
+	err = s.pool.QueryRow(ctx, `SELECT user_id FROM posts WHERE id = $1`, id).Scan(&ownerID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, "post not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch post: %v", err)
+	}
+	if ownerID != u.id {
+		return nil, status.Error(codes.PermissionDenied, "you can only delete your own posts")
+	}
+
+	if _, err = s.pool.Exec(ctx, `DELETE FROM posts WHERE id = $1`, id); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete post: %v", err)
+	}
+
+	return &blogv1.DeletePostResponse{}, nil
 }
 
 // ListPosts returns all posts, newest first.
@@ -238,14 +318,32 @@ func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRe
 	return &blogv1.ListUserPostsResponse{Posts: posts}, nil
 }
 
-// isPrime reports whether the user with the given id is the prime user.
-func (s *Service) isPrime(ctx context.Context, userID string) (bool, error) {
-	var prime bool
-	err := s.pool.QueryRow(ctx, `SELECT is_prime FROM users WHERE id = $1`, userID).Scan(&prime)
+type userRecord struct {
+	id       string
+	username string
+	isPrime  bool
+}
+
+// requireUser authenticates the caller and validates, against the database,
+// that they are a real, existing user. This prevents endpoints from trusting a
+// JWT alone (e.g. a forged token or a deleted user).
+func (s *Service) requireUser(ctx context.Context) (*userRecord, error) {
+	claims, err := s.authenticate(ctx)
 	if err != nil {
-		return false, status.Errorf(codes.Internal, "failed to check authorization: %v", err)
+		return nil, err
 	}
-	return prime, nil
+
+	var u userRecord
+	err = s.pool.QueryRow(ctx,
+		`SELECT id, username, is_prime FROM users WHERE id = $1`, claims.Subject,
+	).Scan(&u.id, &u.username, &u.isPrime)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, status.Error(codes.Unauthenticated, "user no longer exists")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load user: %v", err)
+	}
+	return &u, nil
 }
 
 // authenticate extracts and validates the bearer token from gRPC metadata.

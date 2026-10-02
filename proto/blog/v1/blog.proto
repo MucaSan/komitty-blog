@@ -70,6 +70,22 @@ message UploadImageResponse {
   string url = 2;
 }
 
+message UpdatePostRequest {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+}
+
+message UpdatePostResponse {
+  Post post = 1;
+}
+
+message DeletePostRequest {
+  string id = 1;
+}
+
+message DeletePostResponse {}
+
 message ListPostsRequest {}
 
 message ListPostsResponse {
@@ -114,6 +130,21 @@ service BlogService {
     option (google.api.http) = {
       post: "/v1/images"
       body: "*"
+    };
+  }
+
+  // UpdatePost edits a post. Only the post owner may update it.
+  rpc UpdatePost(UpdatePostRequest) returns (UpdatePostResponse) {
+    option (google.api.http) = {
+      patch: "/v1/posts/{id}"
+      body: "*"
+    };
+  }
+
+  // DeletePost removes a post. Only the post owner may delete it.
+  rpc DeletePost(DeletePostRequest) returns (DeletePostResponse) {
+    option (google.api.http) = {
+      delete: "/v1/posts/{id}"
     };
   }
 
