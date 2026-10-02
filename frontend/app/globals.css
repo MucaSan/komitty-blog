@@ -858,6 +858,15 @@ a {
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 8px));
 }
+/* Flipped variant: the bubble is anchored to the bottom edge of the button and
+   drops below it, used when there is no room above (e.g. the toolbar scrolled
+   up underneath the sticky navbar). */
+.toolbar-tip--below {
+  transform: translate(-50%, 8px);
+}
+.toolbar-tip__label {
+  font-weight: 600;
+}
 .toolbar-tip__kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
