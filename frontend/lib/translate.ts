@@ -40,7 +40,11 @@ export async function translateText(text: string, target: Language): Promise<str
     // Always rely on the browser translation, in both directions (EN->PT and
     // PT->EN). When the text is already in the target language we keep the
     // original so we never rewrite content that does not need translating.
-    const result = !translated || detected === target ? trimmed : translated;
+    // Google reports regional variants ("pt-PT", "en-GB"), so compare just the
+    // primary subtag — otherwise PT-BR content would get rewritten into PT-PT
+    // while the reader is already reading in Portuguese.
+    const detectedPrimary = detected.split("-")[0];
+    const result = !translated || detectedPrimary === target ? trimmed : translated;
     cache.set(key, result);
     return result;
   } catch {
@@ -59,7 +63,7 @@ export async function translateContent(content: string, target: Language): Promi
     return translateText(content, target);
   }
 
-  const textNodes: { node: any }[] = [];
+  const textNodes: { type: string; text: string }[] = [];
   const collect = (node: any) => {
     if (!node) return;
     if (node.type === "text" && typeof node.text === "string" && node.text.trim()) {
@@ -70,7 +74,7 @@ export async function translateContent(content: string, target: Language): Promi
   collect(doc);
 
   await Promise.all(
-    textNodes.map(async ({ node }) => {
+    textNodes.map(async (node) => {
       node.text = await translateText(node.text, target);
     }),
   );
