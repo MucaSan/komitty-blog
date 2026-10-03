@@ -1,4 +1,6 @@
-import { generateHTML } from "@tiptap/html";
+import { getSchema } from "@tiptap/core";
+import { DOMSerializer, Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { createHTMLDocument } from "zeed-dom";
 import { editorExtensions } from "./editorExtensions";
 
 // Posts are stored as TipTap JSON documents. Older / mock content is plain text,
@@ -7,7 +9,50 @@ import { editorExtensions } from "./editorExtensions";
 export function contentToHtml(content: string): string {
   const doc = parseDoc(content);
   if (!doc) return plainTextToHtml(content);
-  return addHeadingAnchors(generateHTML(doc, editorExtensions), extractHeadings(content));
+  return addHeadingAnchors(docToHtml(doc), extractHeadings(content));
+}
+
+// The schema is immutable and expensive to build, so it is reused for every
+// post (ProseMirror caches its DOM serializer on the schema as well).
+let cachedSchema: ReturnType<typeof getSchema> | null = null;
+
+function htmlSchema(): ReturnType<typeof getSchema> {
+  cachedSchema ??= getSchema(editorExtensions);
+  return cachedSchema;
+}
+
+// Renders a TipTap document with the same schema/extension set the editor uses,
+// which keeps inline styles (paragraph alignment, text colour, ...) intact.
+//
+// `generateHTML()` from @tiptap/html cannot be used for this: it serializes
+// through zeed-dom, whose `element.style` is a plain object without a working
+// `cssText` setter, while ProseMirror's DOMSerializer writes attributes with
+// `dom.style.cssText`. Every inline style was therefore silently dropped in the
+// read view, so justified/centred paragraphs fell back to left-aligned and
+// coloured text lost its colour. Serializing ourselves and hiding `style` on
+// the elements makes ProseMirror fall back to `setAttribute("style", ...)`,
+// which zeed-dom does render.
+function docToHtml(doc: any): string {
+  const schema = htmlSchema();
+  const node = ProseMirrorNode.fromJSON(schema, doc);
+  const fragment = DOMSerializer.fromSchema(schema).serializeFragment(node.content, {
+    document: createSerializerDocument(),
+  });
+  return (fragment as unknown as { render(): string }).render();
+}
+
+function createSerializerDocument(): Document {
+  const vdocument = createHTMLDocument();
+  const createElement = vdocument.createElement.bind(vdocument);
+  (vdocument as unknown as { createElement: Document["createElement"] }).createElement = ((
+    name: string,
+    options?: ElementCreationOptions,
+  ) => {
+    const element = createElement(name, options);
+    Object.defineProperty(element, "style", { value: undefined, configurable: true });
+    return element;
+  }) as Document["createElement"];
+  return vdocument as unknown as Document;
 }
 
 // Injects stable `id` attributes into the rendered H2/H3 elements so the table
