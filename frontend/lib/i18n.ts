@@ -101,6 +101,8 @@ export const messages = {
       passwordsMismatch: "Passwords do not match",
       needLoginImages: "You need to be logged in to upload images",
       somethingWentWrong: "Something went wrong",
+      outdatedBuild: "A new version of the blog was deployed. Reloading…",
+      reload: "Reload page",
     },
     password: {
       show: "Show password",
@@ -207,6 +209,8 @@ export const messages = {
       passwordsMismatch: "As senhas não coincidem",
       needLoginImages: "Você precisa estar logado para enviar imagens",
       somethingWentWrong: "Algo deu errado",
+      outdatedBuild: "Uma nova versão do blog foi publicada. Recarregando…",
+      reload: "Recarregar a página",
     },
     password: {
       show: "Mostrar senha",
