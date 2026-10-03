@@ -57,6 +57,13 @@ export async function translateText(text: string, target: Language): Promise<str
 // Translates the text of a post while preserving its rich-text structure.
 // TipTap documents are walked and each text node is translated in place; plain
 // text content is translated as a single string.
+//
+// TipTap splits a block into one text node per mark boundary, so the spaces
+// around a bold/italic/link run live in the neighbouring nodes:
+//   "… with the password " + bold("komitty ") + "which was marked …"
+// translateText() trims what it returns, so every node's leading/trailing
+// whitespace is captured up front and re-attached afterwards. Without that the
+// words around each mark end up glued together ("passwordkomittywhich").
 export async function translateContent(content: string, target: Language): Promise<string> {
   const doc = parseDoc(content);
   if (!doc) {
@@ -75,7 +82,12 @@ export async function translateContent(content: string, target: Language): Promi
 
   await Promise.all(
     textNodes.map(async (node) => {
-      node.text = await translateText(node.text, target);
+      const original = node.text;
+      const leading = /^\s*/.exec(original)?.[0] ?? "";
+      const trailing = /\s*$/.exec(original)?.[0] ?? "";
+      const core = original.slice(leading.length, original.length - trailing.length);
+      // Whitespace-only nodes (and stray empty ones) are left untouched.
+      node.text = core ? leading + (await translateText(core, target)) + trailing : original;
     }),
   );
 
