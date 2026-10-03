@@ -1,6 +1,6 @@
 # Komitty Blog
 
-A web-first blog for posting achievements in **mathematics, physics, history** and
+A web-first blog for sharing ideas and
 more, with a UI faithful to the [Komitty](https://github.com/MucaSan/komitty-android-app)
 app.
 
