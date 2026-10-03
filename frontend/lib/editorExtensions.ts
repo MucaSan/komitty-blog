@@ -11,7 +11,8 @@ import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 
-// Shared between the editor and the renderer (generateHTML / generateText).
+// Shared between the editor and the read view renderer (lib/content.ts), so
+// server-rendered posts carry the same attributes the editor produces.
 export const editorExtensions = [
   StarterKit,
   Underline,
