@@ -7,6 +7,7 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  type PointerEvent,
   type ReactNode,
 } from "react";
 import { EditorContent, ReactRenderer, useEditor } from "@tiptap/react";
@@ -23,6 +24,7 @@ import {
   type EditorShortcutHandlers,
 } from "@/lib/editorShortcuts";
 import { useTranslation } from "@/components/LanguageProvider";
+import { useSettings } from "@/components/SettingsProvider";
 
 type Range = { from: number; to: number };
 type SlashProps = { editor: any; range: Range };
@@ -292,7 +294,23 @@ export function RichTextEditor({
   const [tip, setTip] = useState<ToolbarTip | null>(null);
   const colorWrapRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslation();
+  const { settings } = useSettings();
+  const toolbarPosition = settings.toolbar;
   currentT = t;
+
+  // Toolbar drag state (used when the toolbar position is "drag"). The toolbar
+  // stays in normal flow until the user actually holds and moves it; from then
+  // on it is positioned with `position: fixed`.
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
 
   // The toolbar scrolls horizontally, so the color picker is positioned with
   // `position: fixed` and closed whenever the page or toolbar scrolls.
@@ -340,6 +358,16 @@ export function RichTextEditor({
     content: parseInitialContent(initialContent),
     editorProps: {
       attributes: { class: "richtext__content" },
+      // Paste as plain text: pasting from another source must not carry over
+      // its formatting (font size, colour, …). When the clipboard has plain
+      // text we replace the default HTML paste with a plain-text insert.
+      handlePaste: (view, event) => {
+        const text = event.clipboardData?.getData("text/plain");
+        if (!text) return false;
+        event.preventDefault();
+        view.pasteText(text, event);
+        return true;
+      },
     },
     onUpdate: ({ editor }) => {
       onChange?.(JSON.stringify(editor.getJSON()), editor.isEmpty);
@@ -511,18 +539,79 @@ export function RichTextEditor({
     );
   };
 
-  return (
-    <div className="richtext">
-      <div
-        className="toolbar"
-        onMouseOver={(e) => showTip(e.target)}
-        onMouseLeave={() => setTip(null)}
-        onFocus={(e) => showTip(e.target)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) setTip(null);
-        }}
-        onScroll={() => setTip(null)}
-      >
+  // Hold-click drag for the "drag" toolbar position. Dragging starts on the
+  // toolbar background (not on buttons/inputs, which keep their own behaviour)
+  // and clamps the floating toolbar to the viewport.
+  const clampDragX = (x: number) => {
+    const width = toolbarRef.current?.offsetWidth ?? 320;
+    return Math.min(Math.max(x, 8), Math.max(8, window.innerWidth - width - 8));
+  };
+  const clampDragY = (y: number) => {
+    const height = toolbarRef.current?.offsetHeight ?? 44;
+    return Math.min(Math.max(y, 8), Math.max(8, window.innerHeight - height - 8));
+  };
+
+  const handleToolbarPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (toolbarPosition !== "drag") return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button, input, a, [data-tooltip]")) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragStateRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: rect.left,
+      originY: rect.top,
+      moved: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleToolbarPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const state = dragStateRef.current;
+    if (!state || state.pointerId !== e.pointerId) return;
+    const dx = e.clientX - state.startX;
+    const dy = e.clientY - state.startY;
+    if (!state.moved && Math.hypot(dx, dy) < 4) return;
+    state.moved = true;
+    setDragPos({
+      x: clampDragX(state.originX + dx),
+      y: clampDragY(state.originY + dy),
+    });
+  };
+
+  const handleToolbarPointerEnd = (e: PointerEvent<HTMLDivElement>) => {
+    if (dragStateRef.current?.pointerId === e.pointerId) {
+      dragStateRef.current = null;
+    }
+  };
+
+  const floating = toolbarPosition === "drag" && dragPos !== null;
+  const toolbarClassName = [
+    "toolbar",
+    toolbarPosition === "down" && !floating ? "toolbar--bottom" : "",
+    floating ? "toolbar--floating" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const toolbarElement = (
+    <div
+      ref={toolbarRef}
+      className={toolbarClassName}
+      style={floating && dragPos ? { left: dragPos.x, top: dragPos.y } : undefined}
+      onMouseOver={(e) => showTip(e.target)}
+      onMouseLeave={() => setTip(null)}
+      onFocus={(e) => showTip(e.target)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setTip(null);
+      }}
+      onScroll={() => setTip(null)}
+      onPointerDown={handleToolbarPointerDown}
+      onPointerMove={handleToolbarPointerMove}
+      onPointerUp={handleToolbarPointerEnd}
+      onPointerCancel={handleToolbarPointerEnd}
+    >
         <div className="toolbar__group">
           <ToolbarButton label="H1" title={t("editor.heading1")} active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} shortcut={EDITOR_SHORTCUTS.heading1} />
           <ToolbarButton label="H2" title={t("editor.heading2")} active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} shortcut={EDITOR_SHORTCUTS.heading2} />
@@ -577,7 +666,12 @@ export function RichTextEditor({
             <ToolbarButton label="✕" title={t("editor.deleteTable")} onClick={() => editor.chain().focus().deleteTable().run()} shortcut={EDITOR_SHORTCUTS.deleteTable} />
           </div>
         )}
-      </div>
+    </div>
+  );
+
+  return (
+    <div className="richtext">
+      {toolbarPosition !== "down" && toolbarElement}
 
       {tip && (
         <div
@@ -591,6 +685,8 @@ export function RichTextEditor({
       )}
 
       <EditorContent editor={editor} />
+
+      {toolbarPosition === "down" && toolbarElement}
     </div>
   );
 }

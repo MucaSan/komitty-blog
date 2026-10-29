@@ -5,7 +5,8 @@
 // backend is unreachable (e.g. not started yet), we transparently fall back to
 // the in-browser mock store so the UI remains fully usable in development.
 
-import type { Post, Session, User } from "./types";
+import type { Post, Session, Settings, User } from "./types";
+import { DEFAULT_SETTINGS, isValidSettings } from "./settings";
 import * as mock from "./mock";
 
 // Empty string means "same origin" — in production nginx proxies /v1/* to the
@@ -158,4 +159,39 @@ export async function deletePost(id: string, session: Session): Promise<void> {
     method: "DELETE",
     headers: { Authorization: `Bearer ${session.token}` },
   });
+}
+
+export async function getSettings(session: Session): Promise<Settings> {
+  try {
+    const data = await request<{ settings: Settings }>("/v1/settings", {
+      headers: { Authorization: `Bearer ${session.token}` },
+    });
+    return isValidSettings(data.settings) ? data.settings : DEFAULT_SETTINGS;
+  } catch (err) {
+    if (isApiError(err)) throw err;
+    return mock.getSettings(session);
+  }
+}
+
+export async function updateSettings(
+  settings: Settings,
+  session: Session,
+): Promise<Settings> {
+  // Client-side validation mirrors the backend's validation; never send an
+  // unsupported settings document.
+  if (!isValidSettings(settings)) {
+    throw new ApiError("invalid settings", 400);
+  }
+
+  try {
+    const data = await request<{ settings: Settings }>("/v1/settings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ settings }),
+    });
+    return data.settings;
+  } catch (err) {
+    if (isApiError(err)) throw err;
+    return mock.updateSettings(settings, session);
+  }
 }

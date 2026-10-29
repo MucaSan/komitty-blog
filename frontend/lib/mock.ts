@@ -2,7 +2,8 @@
 // reachable. It persists to localStorage so signup → login → create post all
 // work end-to-end during local development without a database.
 
-import type { Post, Session, User } from "./types";
+import type { Post, Session, Settings, User } from "./types";
+import { DEFAULT_SETTINGS } from "./settings";
 
 interface StoredUser extends User {
   password: string;
@@ -10,6 +11,7 @@ interface StoredUser extends User {
 
 const USERS_KEY = "komitty_mock_users";
 const POSTS_KEY = "komitty_mock_posts";
+const SETTINGS_KEY = "komitty_mock_settings";
 
 const SEED_USERS: StoredUser[] = [
   { id: "u-ada", username: "ada", password: "password1", createdAt: "2026-09-01T10:00:00Z", isPrime: true },
@@ -135,4 +137,19 @@ export function createPost(title: string, content: string, session: Session): Po
   posts.unshift(post);
   writeJSON(POSTS_KEY, posts);
   return post;
+}
+
+function getSettingsByUser(): Record<string, Settings> {
+  return readJSON<Record<string, Settings>>(SETTINGS_KEY, {});
+}
+
+export function getSettings(session: Session): Settings {
+  return getSettingsByUser()[session.user.id] ?? DEFAULT_SETTINGS;
+}
+
+export function updateSettings(settings: Settings, session: Session): Settings {
+  const all = getSettingsByUser();
+  all[session.user.id] = settings;
+  writeJSON(SETTINGS_KEY, all);
+  return settings;
 }

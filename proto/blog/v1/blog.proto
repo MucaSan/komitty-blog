@@ -108,6 +108,29 @@ message ListUserPostsResponse {
   repeated Post posts = 1;
 }
 
+// Settings holds the visual preferences of a user. It is stored as a single
+// JSONB document in the database (see the `settings` table), keyed by user id.
+message Settings {
+  // theme is "dark" (default) or "white".
+  string theme = 1;
+  // toolbar is "top" (default), "down" or "drag".
+  string toolbar = 2;
+}
+
+message GetSettingsRequest {}
+
+message GetSettingsResponse {
+  Settings settings = 1;
+}
+
+message UpdateSettingsRequest {
+  Settings settings = 1;
+}
+
+message UpdateSettingsResponse {
+  Settings settings = 1;
+}
+
 service BlogService {
   // CreateUser registers a new account.
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
@@ -175,6 +198,22 @@ service BlogService {
   rpc ListUserPosts(ListUserPostsRequest) returns (ListUserPostsResponse) {
     option (google.api.http) = {
       get: "/v1/users/{username}/posts"
+    };
+  }
+
+  // GetSettings returns the authenticated user's visual settings. Defaults are
+  // returned when the user has not saved any settings yet.
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse) {
+    option (google.api.http) = {
+      get: "/v1/settings"
+    };
+  }
+
+  // UpdateSettings saves the authenticated user's visual settings.
+  rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse) {
+    option (google.api.http) = {
+      post: "/v1/settings"
+      body: "*"
     };
   }
 }

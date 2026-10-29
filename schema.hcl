@@ -110,3 +110,28 @@ table "posts" {
     columns = [column.created_at]
   }
 }
+
+table "settings" {
+  schema = schema.public
+  column "user_id" {
+    type = uuid
+    null = false
+  }
+  column "data" {
+    type = jsonb
+    null = false
+  }
+  column "updated_at" {
+    type = timestamptz
+    null = false
+    default = sql("now()")
+  }
+  primary_key {
+    columns = [column.user_id]
+  }
+  foreign_key "settings_user_id_fkey" {
+    columns     = [column.user_id]
+    ref_columns = [table.users.column.id]
+    on_delete   = CASCADE
+  }
+}

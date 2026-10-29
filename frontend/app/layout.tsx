@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Navbar } from "@/components/Navbar";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { SettingsProvider } from "@/components/SettingsProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,8 +19,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <LanguageProvider>
-          <Navbar />
-          {children}
+          <SettingsProvider>
+            <Navbar />
+            {children}
+          </SettingsProvider>
         </LanguageProvider>
       </body>
     </html>

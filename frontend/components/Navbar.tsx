@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
+import { SettingsDialog } from "./SettingsDialog";
 import { clearSession, getSession, onSessionChange } from "@/lib/session";
 import { useLanguage, useTranslation } from "@/components/LanguageProvider";
 import type { Session } from "@/lib/types";
@@ -75,6 +76,8 @@ export function Navbar() {
               PT
             </button>
           </div>
+
+          {mounted && session && <SettingsDialog />}
         </nav>
       </div>
     </header>

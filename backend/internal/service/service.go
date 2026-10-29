@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -345,6 +346,122 @@ func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRe
 	}
 
 	return &blogv1.ListUserPostsResponse{Posts: posts}, nil
+}
+
+// Allowed values for the visual settings document. The document is stored as a
+// single JSONB value in the `settings` table and replaced in full on every save.
+const (
+	themeDark  = "dark"
+	themeWhite = "white"
+
+	toolbarTop  = "top"
+	toolbarDown = "down"
+	toolbarDrag = "drag"
+)
+
+// settingsDoc is the JSON shape stored in the settings.data JSONB column.
+type settingsDoc struct {
+	Theme   string `json:"theme"`
+	Toolbar string `json:"toolbar"`
+}
+
+func defaultSettingsDoc() settingsDoc {
+	return settingsDoc{Theme: themeDark, Toolbar: toolbarTop}
+}
+
+// GetSettings returns the authenticated user's visual settings. When the user
+// has not saved any settings yet, the defaults (dark theme, top toolbar) are
+// returned without persisting a row.
+func (s *Service) GetSettings(ctx context.Context, _ *blogv1.GetSettingsRequest) (*blogv1.GetSettingsResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []byte
+	err = s.pool.QueryRow(ctx, `SELECT data FROM settings WHERE user_id = $1`, u.id).Scan(&data)
+	if errors.Is(err, pgx.ErrNoRows) {
+		doc := defaultSettingsDoc()
+		return &blogv1.GetSettingsResponse{Settings: settingsToProto(doc)}, nil
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load settings: %v", err)
+	}
+
+	doc, err := parseSettingsDoc(data)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to parse settings: %v", err)
+	}
+
+	return &blogv1.GetSettingsResponse{Settings: settingsToProto(doc)}, nil
+}
+
+// UpdateSettings validates and saves the authenticated user's visual settings.
+// The whole document is written to the JSONB column (upsert by user id).
+func (s *Service) UpdateSettings(ctx context.Context, req *blogv1.UpdateSettingsRequest) (*blogv1.UpdateSettingsResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := validateSettings(req.GetSettings())
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.Marshal(doc)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to serialize settings: %v", err)
+	}
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO settings (user_id, data) VALUES ($1, $2)
+		ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()
+	`, u.id, data)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to save settings: %v", err)
+	}
+
+	return &blogv1.UpdateSettingsResponse{Settings: settingsToProto(doc)}, nil
+}
+
+// validateSettings rejects missing or unsupported settings values. It returns
+// the canonical settings document that should be stored.
+func validateSettings(s *blogv1.Settings) (settingsDoc, error) {
+	if s == nil {
+		return settingsDoc{}, status.Error(codes.InvalidArgument, "settings is required")
+	}
+
+	theme := s.GetTheme()
+	if theme != themeDark && theme != themeWhite {
+		return settingsDoc{}, status.Error(codes.InvalidArgument, `theme must be "dark" or "white"`)
+	}
+
+	toolbar := s.GetToolbar()
+	if toolbar != toolbarTop && toolbar != toolbarDown && toolbar != toolbarDrag {
+		return settingsDoc{}, status.Error(codes.InvalidArgument, `toolbar must be "top", "down" or "drag"`)
+	}
+
+	return settingsDoc{Theme: theme, Toolbar: toolbar}, nil
+}
+
+func parseSettingsDoc(data []byte) (settingsDoc, error) {
+	doc := defaultSettingsDoc()
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return settingsDoc{}, err
+	}
+	// Guard against partial/legacy documents.
+	if doc.Theme != themeDark && doc.Theme != themeWhite {
+		doc.Theme = themeDark
+	}
+	if doc.Toolbar != toolbarTop && doc.Toolbar != toolbarDown && doc.Toolbar != toolbarDrag {
+		doc.Toolbar = toolbarTop
+	}
+	return doc, nil
+}
+
+func settingsToProto(doc settingsDoc) *blogv1.Settings {
+	return &blogv1.Settings{Theme: doc.Theme, Toolbar: doc.Toolbar}
 }
 
 type userRecord struct {

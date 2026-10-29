@@ -9,6 +9,7 @@
   --text-muted: #8d8d8d;
   --text-secondary: rgba(255, 255, 255, 0.45);
   --border-subtle: rgba(255, 255, 255, 0.05);
+  --navbar-bg: rgba(34, 34, 39, 0.85);
 
   --primary: #078fe4;
   --primary-dark: #0570b3;
@@ -181,7 +182,7 @@ a {
 /* ------------------------------------------------------------------ */
 .navbar {
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(34, 34, 39, 0.85);
+  background: var(--navbar-bg);
   backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
@@ -791,6 +792,28 @@ a {
   overflow-y: hidden;
   scrollbar-width: thin;
 }
+/* "Down" toolbar position: rendered below the editor content, so the divider
+   moves to the top edge. */
+.toolbar--bottom {
+  border-bottom: none;
+  border-top: 1px solid var(--border-subtle);
+}
+/* "Drag & drop" toolbar position: floats over the editor and follows the
+   pointer once the user has grabbed it. */
+.toolbar--floating {
+  position: fixed;
+  z-index: 75;
+  width: max-content;
+  max-width: min(92vw, 640px);
+  border: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+}
+.toolbar--floating:active {
+  cursor: grabbing;
+}
 .toolbar::-webkit-scrollbar {
   height: 6px;
 }
@@ -1034,3 +1057,162 @@ a {
   font-size: 13px;
   text-align: center;
 }
+
+/* ------------------------------------------------------------------ */
+/* Settings (gear + modal)                                             */
+/* ------------------------------------------------------------------ */
+.navbar__settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: 2px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.navbar__settings-btn:hover {
+  background: var(--border-subtle);
+  color: var(--text);
+}
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 90px 20px 20px;
+  background: rgba(0, 0, 0, 0.5);
+}
+.settings {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  color: var(--text);
+}
+.settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.settings__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+.settings__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+}
+.settings__close:hover {
+  background: var(--border-subtle);
+  color: var(--text);
+}
+.settings__group {
+  margin: 0 0 16px;
+  padding: 0;
+  border: none;
+}
+.settings__label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.settings__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.settings__option input {
+  margin: 0;
+  accent-color: var(--primary);
+}
+.settings__option:has(input:checked) {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.settings__error {
+  margin: 0 0 12px;
+  color: #f87171;
+  font-size: 13px;
+}
+.settings__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.settings__actions .btn {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Light ("white") theme                                               */
+/* ------------------------------------------------------------------ */
+html[data-theme="white"] {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --divider: #e3e5e9;
+  --text: #1b1d21;
+  --text-muted: #6b7280;
+  --text-secondary: rgba(0, 0, 0, 0.55);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --navbar-bg: rgba(255, 255, 255, 0.85);
+}
+html[data-theme="white"] .toolbar-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+html[data-theme="white"] .toolbar-tip__kbd {
+  background: rgba(0, 0, 0, 0.06);
+}
+html[data-theme="white"] .richtext__content p.is-editor-empty:first-child::before {
+  color: rgba(0, 0, 0, 0.35);
+}
+html[data-theme="white"] .richtext__content code {
+  background: rgba(0, 0, 0, 0.06);
+}
+html[data-theme="white"] .richtext__content pre {
+  background: rgba(0, 0, 0, 0.05);
+}
+html[data-theme="white"] .color-menu__dot {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+

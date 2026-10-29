@@ -21,3 +21,11 @@ export interface Session {
   token: string;
   user: User;
 }
+
+export type Theme = "dark" | "white";
+export type ToolbarPosition = "top" | "down" | "drag";
+
+export interface Settings {
+  theme: Theme;
+  toolbar: ToolbarPosition;
+}

@@ -1031,6 +1031,230 @@ func (x *ListUserPostsResponse) GetPosts() []*Post {
 	return nil
 }
 
+// Settings holds the visual preferences of a user. It is stored as a single
+// JSONB document in the database (see the `settings` table), keyed by user id.
+type Settings struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// theme is "dark" (default) or "white".
+	Theme string `protobuf:"bytes,1,opt,name=theme,proto3" json:"theme,omitempty"`
+	// toolbar is "top" (default), "down" or "drag".
+	Toolbar       string `protobuf:"bytes,2,opt,name=toolbar,proto3" json:"toolbar,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Settings) Reset() {
+	*x = Settings{}
+	mi := &file_blog_v1_blog_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Settings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Settings) ProtoMessage() {}
+
+func (x *Settings) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Settings.ProtoReflect.Descriptor instead.
+func (*Settings) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *Settings) GetTheme() string {
+	if x != nil {
+		return x.Theme
+	}
+	return ""
+}
+
+func (x *Settings) GetToolbar() string {
+	if x != nil {
+		return x.Toolbar
+	}
+	return ""
+}
+
+type GetSettingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSettingsRequest) Reset() {
+	*x = GetSettingsRequest{}
+	mi := &file_blog_v1_blog_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsRequest) ProtoMessage() {}
+
+func (x *GetSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsRequest.ProtoReflect.Descriptor instead.
+func (*GetSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{21}
+}
+
+type GetSettingsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Settings      *Settings              `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSettingsResponse) Reset() {
+	*x = GetSettingsResponse{}
+	mi := &file_blog_v1_blog_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsResponse) ProtoMessage() {}
+
+func (x *GetSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsResponse.ProtoReflect.Descriptor instead.
+func (*GetSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetSettingsResponse) GetSettings() *Settings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
+type UpdateSettingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Settings      *Settings              `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSettingsRequest) Reset() {
+	*x = UpdateSettingsRequest{}
+	mi := &file_blog_v1_blog_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSettingsRequest) ProtoMessage() {}
+
+func (x *UpdateSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSettingsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *UpdateSettingsRequest) GetSettings() *Settings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
+type UpdateSettingsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Settings      *Settings              `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSettingsResponse) Reset() {
+	*x = UpdateSettingsResponse{}
+	mi := &file_blog_v1_blog_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSettingsResponse) ProtoMessage() {}
+
+func (x *UpdateSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSettingsResponse.ProtoReflect.Descriptor instead.
+func (*UpdateSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *UpdateSettingsResponse) GetSettings() *Settings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
 var File_blog_v1_blog_proto protoreflect.FileDescriptor
 
 const file_blog_v1_blog_proto_rawDesc = "" +
@@ -1092,7 +1316,17 @@ const file_blog_v1_blog_proto_rawDesc = "" +
 	"\x14ListUserPostsRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\"<\n" +
 	"\x15ListUserPostsResponse\x12#\n" +
-	"\x05posts\x18\x01 \x03(\v2\r.blog.v1.PostR\x05posts2\xd8\x06\n" +
+	"\x05posts\x18\x01 \x03(\v2\r.blog.v1.PostR\x05posts\":\n" +
+	"\bSettings\x12\x14\n" +
+	"\x05theme\x18\x01 \x01(\tR\x05theme\x12\x18\n" +
+	"\atoolbar\x18\x02 \x01(\tR\atoolbar\"\x14\n" +
+	"\x12GetSettingsRequest\"D\n" +
+	"\x13GetSettingsResponse\x12-\n" +
+	"\bsettings\x18\x01 \x01(\v2\x11.blog.v1.SettingsR\bsettings\"F\n" +
+	"\x15UpdateSettingsRequest\x12-\n" +
+	"\bsettings\x18\x01 \x01(\v2\x11.blog.v1.SettingsR\bsettings\"G\n" +
+	"\x16UpdateSettingsResponse\x12-\n" +
+	"\bsettings\x18\x01 \x01(\v2\x11.blog.v1.SettingsR\bsettings2\xa4\b\n" +
 	"\vBlogService\x12[\n" +
 	"\n" +
 	"CreateUser\x12\x1a.blog.v1.CreateUserRequest\x1a\x1b.blog.v1.CreateUserResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/users\x12L\n" +
@@ -1107,7 +1341,9 @@ const file_blog_v1_blog_proto_rawDesc = "" +
 	"DeletePost\x12\x1a.blog.v1.DeletePostRequest\x1a\x1b.blog.v1.DeletePostResponse\"\x16\x82\xd3\xe4\x93\x02\x10*\x0e/v1/posts/{id}\x12T\n" +
 	"\aGetPost\x12\x17.blog.v1.GetPostRequest\x1a\x18.blog.v1.GetPostResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/posts/{id}\x12U\n" +
 	"\tListPosts\x12\x19.blog.v1.ListPostsRequest\x1a\x1a.blog.v1.ListPostsResponse\"\x11\x82\xd3\xe4\x93\x02\v\x12\t/v1/posts\x12r\n" +
-	"\rListUserPosts\x12\x1d.blog.v1.ListUserPostsRequest\x1a\x1e.blog.v1.ListUserPostsResponse\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/users/{username}/postsB<Z:github.com/MucaSan/komitty-blog/backend/gen/blog/v1;blogv1b\x06proto3"
+	"\rListUserPosts\x12\x1d.blog.v1.ListUserPostsRequest\x1a\x1e.blog.v1.ListUserPostsResponse\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/users/{username}/posts\x12^\n" +
+	"\vGetSettings\x12\x1b.blog.v1.GetSettingsRequest\x1a\x1c.blog.v1.GetSettingsResponse\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/settings\x12j\n" +
+	"\x0eUpdateSettings\x12\x1e.blog.v1.UpdateSettingsRequest\x1a\x1f.blog.v1.UpdateSettingsResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/v1/settingsB<Z:github.com/MucaSan/komitty-blog/backend/gen/blog/v1;blogv1b\x06proto3"
 
 var (
 	file_blog_v1_blog_proto_rawDescOnce sync.Once
@@ -1121,28 +1357,33 @@ func file_blog_v1_blog_proto_rawDescGZIP() []byte {
 	return file_blog_v1_blog_proto_rawDescData
 }
 
-var file_blog_v1_blog_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_blog_v1_blog_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_blog_v1_blog_proto_goTypes = []any{
-	(*User)(nil),                  // 0: blog.v1.User
-	(*Post)(nil),                  // 1: blog.v1.Post
-	(*CreateUserRequest)(nil),     // 2: blog.v1.CreateUserRequest
-	(*CreateUserResponse)(nil),    // 3: blog.v1.CreateUserResponse
-	(*LoginRequest)(nil),          // 4: blog.v1.LoginRequest
-	(*LoginResponse)(nil),         // 5: blog.v1.LoginResponse
-	(*CreatePostRequest)(nil),     // 6: blog.v1.CreatePostRequest
-	(*CreatePostResponse)(nil),    // 7: blog.v1.CreatePostResponse
-	(*UploadImageRequest)(nil),    // 8: blog.v1.UploadImageRequest
-	(*UploadImageResponse)(nil),   // 9: blog.v1.UploadImageResponse
-	(*UpdatePostRequest)(nil),     // 10: blog.v1.UpdatePostRequest
-	(*UpdatePostResponse)(nil),    // 11: blog.v1.UpdatePostResponse
-	(*DeletePostRequest)(nil),     // 12: blog.v1.DeletePostRequest
-	(*DeletePostResponse)(nil),    // 13: blog.v1.DeletePostResponse
-	(*GetPostRequest)(nil),        // 14: blog.v1.GetPostRequest
-	(*GetPostResponse)(nil),       // 15: blog.v1.GetPostResponse
-	(*ListPostsRequest)(nil),      // 16: blog.v1.ListPostsRequest
-	(*ListPostsResponse)(nil),     // 17: blog.v1.ListPostsResponse
-	(*ListUserPostsRequest)(nil),  // 18: blog.v1.ListUserPostsRequest
-	(*ListUserPostsResponse)(nil), // 19: blog.v1.ListUserPostsResponse
+	(*User)(nil),                   // 0: blog.v1.User
+	(*Post)(nil),                   // 1: blog.v1.Post
+	(*CreateUserRequest)(nil),      // 2: blog.v1.CreateUserRequest
+	(*CreateUserResponse)(nil),     // 3: blog.v1.CreateUserResponse
+	(*LoginRequest)(nil),           // 4: blog.v1.LoginRequest
+	(*LoginResponse)(nil),          // 5: blog.v1.LoginResponse
+	(*CreatePostRequest)(nil),      // 6: blog.v1.CreatePostRequest
+	(*CreatePostResponse)(nil),     // 7: blog.v1.CreatePostResponse
+	(*UploadImageRequest)(nil),     // 8: blog.v1.UploadImageRequest
+	(*UploadImageResponse)(nil),    // 9: blog.v1.UploadImageResponse
+	(*UpdatePostRequest)(nil),      // 10: blog.v1.UpdatePostRequest
+	(*UpdatePostResponse)(nil),     // 11: blog.v1.UpdatePostResponse
+	(*DeletePostRequest)(nil),      // 12: blog.v1.DeletePostRequest
+	(*DeletePostResponse)(nil),     // 13: blog.v1.DeletePostResponse
+	(*GetPostRequest)(nil),         // 14: blog.v1.GetPostRequest
+	(*GetPostResponse)(nil),        // 15: blog.v1.GetPostResponse
+	(*ListPostsRequest)(nil),       // 16: blog.v1.ListPostsRequest
+	(*ListPostsResponse)(nil),      // 17: blog.v1.ListPostsResponse
+	(*ListUserPostsRequest)(nil),   // 18: blog.v1.ListUserPostsRequest
+	(*ListUserPostsResponse)(nil),  // 19: blog.v1.ListUserPostsResponse
+	(*Settings)(nil),               // 20: blog.v1.Settings
+	(*GetSettingsRequest)(nil),     // 21: blog.v1.GetSettingsRequest
+	(*GetSettingsResponse)(nil),    // 22: blog.v1.GetSettingsResponse
+	(*UpdateSettingsRequest)(nil),  // 23: blog.v1.UpdateSettingsRequest
+	(*UpdateSettingsResponse)(nil), // 24: blog.v1.UpdateSettingsResponse
 }
 var file_blog_v1_blog_proto_depIdxs = []int32{
 	0,  // 0: blog.v1.CreateUserResponse.user:type_name -> blog.v1.User
@@ -1152,29 +1393,36 @@ var file_blog_v1_blog_proto_depIdxs = []int32{
 	1,  // 4: blog.v1.GetPostResponse.post:type_name -> blog.v1.Post
 	1,  // 5: blog.v1.ListPostsResponse.posts:type_name -> blog.v1.Post
 	1,  // 6: blog.v1.ListUserPostsResponse.posts:type_name -> blog.v1.Post
-	2,  // 7: blog.v1.BlogService.CreateUser:input_type -> blog.v1.CreateUserRequest
-	4,  // 8: blog.v1.BlogService.Login:input_type -> blog.v1.LoginRequest
-	6,  // 9: blog.v1.BlogService.CreatePost:input_type -> blog.v1.CreatePostRequest
-	8,  // 10: blog.v1.BlogService.UploadImage:input_type -> blog.v1.UploadImageRequest
-	10, // 11: blog.v1.BlogService.UpdatePost:input_type -> blog.v1.UpdatePostRequest
-	12, // 12: blog.v1.BlogService.DeletePost:input_type -> blog.v1.DeletePostRequest
-	14, // 13: blog.v1.BlogService.GetPost:input_type -> blog.v1.GetPostRequest
-	16, // 14: blog.v1.BlogService.ListPosts:input_type -> blog.v1.ListPostsRequest
-	18, // 15: blog.v1.BlogService.ListUserPosts:input_type -> blog.v1.ListUserPostsRequest
-	3,  // 16: blog.v1.BlogService.CreateUser:output_type -> blog.v1.CreateUserResponse
-	5,  // 17: blog.v1.BlogService.Login:output_type -> blog.v1.LoginResponse
-	7,  // 18: blog.v1.BlogService.CreatePost:output_type -> blog.v1.CreatePostResponse
-	9,  // 19: blog.v1.BlogService.UploadImage:output_type -> blog.v1.UploadImageResponse
-	11, // 20: blog.v1.BlogService.UpdatePost:output_type -> blog.v1.UpdatePostResponse
-	13, // 21: blog.v1.BlogService.DeletePost:output_type -> blog.v1.DeletePostResponse
-	15, // 22: blog.v1.BlogService.GetPost:output_type -> blog.v1.GetPostResponse
-	17, // 23: blog.v1.BlogService.ListPosts:output_type -> blog.v1.ListPostsResponse
-	19, // 24: blog.v1.BlogService.ListUserPosts:output_type -> blog.v1.ListUserPostsResponse
-	16, // [16:25] is the sub-list for method output_type
-	7,  // [7:16] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	20, // 7: blog.v1.GetSettingsResponse.settings:type_name -> blog.v1.Settings
+	20, // 8: blog.v1.UpdateSettingsRequest.settings:type_name -> blog.v1.Settings
+	20, // 9: blog.v1.UpdateSettingsResponse.settings:type_name -> blog.v1.Settings
+	2,  // 10: blog.v1.BlogService.CreateUser:input_type -> blog.v1.CreateUserRequest
+	4,  // 11: blog.v1.BlogService.Login:input_type -> blog.v1.LoginRequest
+	6,  // 12: blog.v1.BlogService.CreatePost:input_type -> blog.v1.CreatePostRequest
+	8,  // 13: blog.v1.BlogService.UploadImage:input_type -> blog.v1.UploadImageRequest
+	10, // 14: blog.v1.BlogService.UpdatePost:input_type -> blog.v1.UpdatePostRequest
+	12, // 15: blog.v1.BlogService.DeletePost:input_type -> blog.v1.DeletePostRequest
+	14, // 16: blog.v1.BlogService.GetPost:input_type -> blog.v1.GetPostRequest
+	16, // 17: blog.v1.BlogService.ListPosts:input_type -> blog.v1.ListPostsRequest
+	18, // 18: blog.v1.BlogService.ListUserPosts:input_type -> blog.v1.ListUserPostsRequest
+	21, // 19: blog.v1.BlogService.GetSettings:input_type -> blog.v1.GetSettingsRequest
+	23, // 20: blog.v1.BlogService.UpdateSettings:input_type -> blog.v1.UpdateSettingsRequest
+	3,  // 21: blog.v1.BlogService.CreateUser:output_type -> blog.v1.CreateUserResponse
+	5,  // 22: blog.v1.BlogService.Login:output_type -> blog.v1.LoginResponse
+	7,  // 23: blog.v1.BlogService.CreatePost:output_type -> blog.v1.CreatePostResponse
+	9,  // 24: blog.v1.BlogService.UploadImage:output_type -> blog.v1.UploadImageResponse
+	11, // 25: blog.v1.BlogService.UpdatePost:output_type -> blog.v1.UpdatePostResponse
+	13, // 26: blog.v1.BlogService.DeletePost:output_type -> blog.v1.DeletePostResponse
+	15, // 27: blog.v1.BlogService.GetPost:output_type -> blog.v1.GetPostResponse
+	17, // 28: blog.v1.BlogService.ListPosts:output_type -> blog.v1.ListPostsResponse
+	19, // 29: blog.v1.BlogService.ListUserPosts:output_type -> blog.v1.ListUserPostsResponse
+	22, // 30: blog.v1.BlogService.GetSettings:output_type -> blog.v1.GetSettingsResponse
+	24, // 31: blog.v1.BlogService.UpdateSettings:output_type -> blog.v1.UpdateSettingsResponse
+	21, // [21:32] is the sub-list for method output_type
+	10, // [10:21] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_blog_v1_blog_proto_init() }
@@ -1188,7 +1436,7 @@ func file_blog_v1_blog_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_blog_v1_blog_proto_rawDesc), len(file_blog_v1_blog_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
