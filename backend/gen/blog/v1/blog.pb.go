@@ -864,7 +864,9 @@ func (x *GetPostResponse) GetPost() *Post {
 }
 
 type ListPostsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// page is 1-based. When 0 or omitted, the first page is returned.
+	Page          int32 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -899,9 +901,22 @@ func (*ListPostsRequest) Descriptor() ([]byte, []int) {
 	return file_blog_v1_blog_proto_rawDescGZIP(), []int{16}
 }
 
+func (x *ListPostsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
 type ListPostsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Posts         []*Post                `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Posts []*Post                `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	// total is the number of posts available across all pages.
+	Total int32 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	// page echoes the requested page (1-based).
+	Page int32 `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	// total_pages is the number of available pages.
+	TotalPages    int32 `protobuf:"varint,4,opt,name=total_pages,json=totalPages,proto3" json:"total_pages,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -943,9 +958,32 @@ func (x *ListPostsResponse) GetPosts() []*Post {
 	return nil
 }
 
+func (x *ListPostsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ListPostsResponse) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListPostsResponse) GetTotalPages() int32 {
+	if x != nil {
+		return x.TotalPages
+	}
+	return 0
+}
+
 type ListUserPostsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Username string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	// page is 1-based. When 0 or omitted, the first page is returned.
+	Page          int32 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -987,9 +1025,22 @@ func (x *ListUserPostsRequest) GetUsername() string {
 	return ""
 }
 
+func (x *ListUserPostsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
 type ListUserPostsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Posts         []*Post                `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Posts []*Post                `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	// total is the number of posts by this user across all pages.
+	Total int32 `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	// page echoes the requested page (1-based).
+	Page int32 `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	// total_pages is the number of available pages.
+	TotalPages    int32 `protobuf:"varint,4,opt,name=total_pages,json=totalPages,proto3" json:"total_pages,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1029,6 +1080,27 @@ func (x *ListUserPostsResponse) GetPosts() []*Post {
 		return x.Posts
 	}
 	return nil
+}
+
+func (x *ListUserPostsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ListUserPostsResponse) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListUserPostsResponse) GetTotalPages() int32 {
+	if x != nil {
+		return x.TotalPages
+	}
+	return 0
 }
 
 // Settings holds the visual preferences of a user. It is stored as a single
@@ -1309,14 +1381,24 @@ const file_blog_v1_blog_proto_rawDesc = "" +
 	"\x0eGetPostRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"4\n" +
 	"\x0fGetPostResponse\x12!\n" +
-	"\x04post\x18\x01 \x01(\v2\r.blog.v1.PostR\x04post\"\x12\n" +
-	"\x10ListPostsRequest\"8\n" +
+	"\x04post\x18\x01 \x01(\v2\r.blog.v1.PostR\x04post\"&\n" +
+	"\x10ListPostsRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\"\x83\x01\n" +
 	"\x11ListPostsResponse\x12#\n" +
-	"\x05posts\x18\x01 \x03(\v2\r.blog.v1.PostR\x05posts\"2\n" +
+	"\x05posts\x18\x01 \x03(\v2\r.blog.v1.PostR\x05posts\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1f\n" +
+	"\vtotal_pages\x18\x04 \x01(\x05R\n" +
+	"totalPages\"F\n" +
 	"\x14ListUserPostsRequest\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\"<\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\"\x87\x01\n" +
 	"\x15ListUserPostsResponse\x12#\n" +
-	"\x05posts\x18\x01 \x03(\v2\r.blog.v1.PostR\x05posts\":\n" +
+	"\x05posts\x18\x01 \x03(\v2\r.blog.v1.PostR\x05posts\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1f\n" +
+	"\vtotal_pages\x18\x04 \x01(\x05R\n" +
+	"totalPages\":\n" +
 	"\bSettings\x12\x14\n" +
 	"\x05theme\x18\x01 \x01(\tR\x05theme\x12\x18\n" +
 	"\atoolbar\x18\x02 \x01(\tR\atoolbar\"\x14\n" +

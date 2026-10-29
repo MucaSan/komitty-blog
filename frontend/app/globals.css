@@ -1216,3 +1216,20 @@ html[data-theme="white"] .color-menu__dot {
   border-color: rgba(0, 0, 0, 0.3);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Pagination                                                          */
+/* ------------------------------------------------------------------ */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 24px 0 32px;
+}
+.pagination__status {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+

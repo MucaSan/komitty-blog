@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { Pagination } from "@/components/Pagination";
 import { PostCard } from "@/components/PostCard";
 import { useTranslation } from "@/components/LanguageProvider";
 import { listPosts } from "@/lib/api";
@@ -12,20 +13,46 @@ import type { Post, Session } from "@/lib/types";
 export default function HomePage() {
   const { t } = useTranslation();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    listPosts()
-      .then(setPosts)
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    setLoading(true);
+    listPosts(page)
+      .then((res) => {
+        if (cancelled) return;
+        setPosts(res.posts);
+        setTotal(res.total);
+        setTotalPages(res.totalPages);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPosts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
+
+  useEffect(() => {
     const update = () => setSession(getSession());
     update();
     setMounted(true);
     return onSessionChange(update);
   }, []);
+
+  function goToPage(next: number) {
+    setPage(next);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return (
     <main className="container">
@@ -37,7 +64,7 @@ export default function HomePage() {
 
       <div className="feed-toolbar">
         <span className="feed-toolbar__count">
-          {posts.length} {t(posts.length === 1 ? "home.post" : "home.posts")}
+          {total} {t(total === 1 ? "home.post" : "home.posts")}
         </span>
         {mounted && session && (
           <Link href="/new" className="btn btn--primary">
@@ -55,6 +82,8 @@ export default function HomePage() {
           posts.map((post) => <PostCard key={post.id} post={post} />)
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onChange={goToPage} />
     </main>
   );
 }

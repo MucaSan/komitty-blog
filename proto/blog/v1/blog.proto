@@ -94,18 +94,35 @@ message GetPostResponse {
   Post post = 1;
 }
 
-message ListPostsRequest {}
+message ListPostsRequest {
+  // page is 1-based. When 0 or omitted, the first page is returned.
+  int32 page = 1;
+}
 
 message ListPostsResponse {
   repeated Post posts = 1;
+  // total is the number of posts available across all pages.
+  int32 total = 2;
+  // page echoes the requested page (1-based).
+  int32 page = 3;
+  // total_pages is the number of available pages.
+  int32 total_pages = 4;
 }
 
 message ListUserPostsRequest {
   string username = 1;
+  // page is 1-based. When 0 or omitted, the first page is returned.
+  int32 page = 2;
 }
 
 message ListUserPostsResponse {
   repeated Post posts = 1;
+  // total is the number of posts by this user across all pages.
+  int32 total = 2;
+  // page echoes the requested page (1-based).
+  int32 page = 3;
+  // total_pages is the number of available pages.
+  int32 total_pages = 4;
 }
 
 // Settings holds the visual preferences of a user. It is stored as a single

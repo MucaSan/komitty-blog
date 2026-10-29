@@ -2,7 +2,7 @@
 // reachable. It persists to localStorage so signup → login → create post all
 // work end-to-end during local development without a database.
 
-import type { Post, Session, Settings, User } from "./types";
+import type { Post, PostPage, Session, Settings, User } from "./types";
 import { DEFAULT_SETTINGS } from "./settings";
 
 interface StoredUser extends User {
@@ -89,12 +89,27 @@ function stripPassword(user: StoredUser): User {
   return rest;
 }
 
-export function listPosts(): Post[] {
-  return newestFirst(getPosts());
+const MOCK_PAGE_SIZE = 10;
+
+function paginatePosts(posts: Post[], page: number): PostPage {
+  const total = posts.length;
+  const totalPages = total > 0 ? Math.ceil(total / MOCK_PAGE_SIZE) : 0;
+  const current = Math.max(1, page);
+  const start = (current - 1) * MOCK_PAGE_SIZE;
+  return {
+    posts: posts.slice(start, start + MOCK_PAGE_SIZE),
+    total,
+    page: current,
+    totalPages,
+  };
 }
 
-export function listUserPosts(username: string): Post[] {
-  return newestFirst(getPosts().filter((p) => p.username === username));
+export function listPosts(page = 1): PostPage {
+  return paginatePosts(newestFirst(getPosts()), page);
+}
+
+export function listUserPosts(username: string, page = 1): PostPage {
+  return paginatePosts(newestFirst(getPosts().filter((p) => p.username === username)), page);
 }
 
 export function getPost(id: string): Post | null {

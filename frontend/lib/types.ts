@@ -17,6 +17,13 @@ export interface Post {
   createdAt: string;
 }
 
+export interface PostPage {
+  posts: Post[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 export interface Session {
   token: string;
   user: User;

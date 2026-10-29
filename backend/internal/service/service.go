@@ -300,14 +300,42 @@ func (s *Service) DeletePost(ctx context.Context, req *blogv1.DeletePostRequest)
 	return &blogv1.DeletePostResponse{}, nil
 }
 
-// ListPosts returns all posts, newest first.
-func (s *Service) ListPosts(ctx context.Context, _ *blogv1.ListPostsRequest) (*blogv1.ListPostsResponse, error) {
+// postsPerPage is the fixed page size used by the post feeds. The requirement
+// is "10 publications per page".
+const postsPerPage = 10
+
+// paginate normalizes a 1-based page number and derives the SQL offset and the
+// total number of pages for the given total count.
+func paginate(reqPage, total int32) (page, offset, totalPages int32) {
+	if reqPage < 1 {
+		page = 1
+	} else {
+		page = reqPage
+	}
+	offset = (page - 1) * postsPerPage
+	if total <= 0 {
+		totalPages = 0
+	} else {
+		totalPages = (total + postsPerPage - 1) / postsPerPage
+	}
+	return page, offset, totalPages
+}
+
+// ListPosts returns posts newest first, paginated 10 per page.
+func (s *Service) ListPosts(ctx context.Context, req *blogv1.ListPostsRequest) (*blogv1.ListPostsResponse, error) {
+	var total int32
+	if err := s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM posts`).Scan(&total); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count posts: %v", err)
+	}
+	page, offset, totalPages := paginate(req.GetPage(), total)
+
 	rows, err := s.pool.Query(ctx, `
 		SELECT p.id, p.user_id, u.username, p.title, p.content, p.created_at
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		ORDER BY p.created_at DESC
-	`)
+		LIMIT $1 OFFSET $2
+	`, postsPerPage, offset)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list posts: %v", err)
 	}
@@ -318,15 +346,26 @@ func (s *Service) ListPosts(ctx context.Context, _ *blogv1.ListPostsRequest) (*b
 		return nil, status.Errorf(codes.Internal, "failed to read posts: %v", err)
 	}
 
-	return &blogv1.ListPostsResponse{Posts: posts}, nil
+	return &blogv1.ListPostsResponse{Posts: posts, Total: total, Page: page, TotalPages: totalPages}, nil
 }
 
-// ListUserPosts returns a single user's posts, newest first.
+// ListUserPosts returns a single user's posts newest first, paginated 10 per page.
 func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRequest) (*blogv1.ListUserPostsResponse, error) {
 	username := strings.TrimSpace(req.GetUsername())
 	if username == "" {
 		return nil, status.Error(codes.InvalidArgument, "username is required")
 	}
+
+	var total int32
+	if err := s.pool.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM posts p
+		JOIN users u ON u.id = p.user_id
+		WHERE u.username = $1
+	`, username).Scan(&total); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count user posts: %v", err)
+	}
+	page, offset, totalPages := paginate(req.GetPage(), total)
 
 	rows, err := s.pool.Query(ctx, `
 		SELECT p.id, p.user_id, u.username, p.title, p.content, p.created_at
@@ -334,7 +373,8 @@ func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRe
 		JOIN users u ON u.id = p.user_id
 		WHERE u.username = $1
 		ORDER BY p.created_at DESC
-	`, username)
+		LIMIT $2 OFFSET $3
+	`, username, postsPerPage, offset)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list user posts: %v", err)
 	}
@@ -345,7 +385,7 @@ func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRe
 		return nil, status.Errorf(codes.Internal, "failed to read posts: %v", err)
 	}
 
-	return &blogv1.ListUserPostsResponse{Posts: posts}, nil
+	return &blogv1.ListUserPostsResponse{Posts: posts, Total: total, Page: page, TotalPages: totalPages}, nil
 }
 
 // Allowed values for the visual settings document. The document is stored as a

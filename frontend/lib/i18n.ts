@@ -78,6 +78,12 @@ export const messages = {
       saving: "Saving…",
       cancel: "Cancel",
     },
+    pagination: {
+      label: "Pagination",
+      previous: "Previous",
+      next: "Next",
+      page: "Page {page} of {total}",
+    },
     editor: {
       heading1: "Heading 1",
       heading2: "Heading 2",
@@ -199,6 +205,12 @@ export const messages = {
       save: "Salvar",
       saving: "Salvando…",
       cancel: "Cancelar",
+    },
+    pagination: {
+      label: "Paginação",
+      previous: "Anterior",
+      next: "Próxima",
+      page: "Página {page} de {total}",
     },
     editor: {
       heading1: "Título 1",

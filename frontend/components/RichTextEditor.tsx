@@ -9,6 +9,7 @@ import {
   useState,
   type PointerEvent,
   type ReactNode,
+  type WheelEvent,
 } from "react";
 import { EditorContent, ReactRenderer, useEditor } from "@tiptap/react";
 import { Extension } from "@tiptap/core";
@@ -545,7 +546,14 @@ export function RichTextEditor({
     if (toolbarPosition !== "drag") return;
     const target = e.target as HTMLElement;
     if (target.closest("button, input, a, [data-tooltip]")) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    // The floating toolbar can overflow horizontally; its own scrollbar must
+    // stay usable. Skip starting a drag when the pointer is over that
+    // scrollbar so the native scrollbar keeps working instead of being
+    // hijacked by `setPointerCapture`.
+    const scrollbarThickness = el.offsetHeight - el.clientHeight;
+    if (scrollbarThickness > 0 && e.clientY >= rect.bottom - scrollbarThickness) return;
     dragStateRef.current = {
       pointerId: e.pointerId,
       startX: e.clientX,
@@ -554,7 +562,7 @@ export function RichTextEditor({
       originY: rect.top,
       moved: false,
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    el.setPointerCapture(e.pointerId);
   };
 
   const handleToolbarPointerMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -574,6 +582,17 @@ export function RichTextEditor({
     if (dragStateRef.current?.pointerId === e.pointerId) {
       dragStateRef.current = null;
     }
+  };
+
+  // Scroll the floating toolbar horizontally with the mouse wheel/trackpad, so
+  // the options beyond the right edge stay reachable without the keyboard.
+  const handleToolbarWheel = (e: WheelEvent<HTMLDivElement>) => {
+    if (toolbarPosition !== "drag") return;
+    const el = e.currentTarget;
+    if (el.scrollWidth <= el.clientWidth) return;
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    el.scrollLeft += delta;
+    e.preventDefault();
   };
 
   const floating = toolbarPosition === "drag" && dragPos !== null;
@@ -597,6 +616,7 @@ export function RichTextEditor({
         if (!e.currentTarget.contains(e.relatedTarget)) setTip(null);
       }}
       onScroll={() => setTip(null)}
+      onWheel={handleToolbarWheel}
       onPointerDown={handleToolbarPointerDown}
       onPointerMove={handleToolbarPointerMove}
       onPointerUp={handleToolbarPointerEnd}

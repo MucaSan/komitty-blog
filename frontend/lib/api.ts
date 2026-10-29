@@ -5,7 +5,7 @@
 // backend is unreachable (e.g. not started yet), we transparently fall back to
 // the in-browser mock store so the UI remains fully usable in development.
 
-import type { Post, Session, Settings, User } from "./types";
+import type { Post, PostPage, Session, Settings, User } from "./types";
 import { DEFAULT_SETTINGS, isValidSettings } from "./settings";
 import * as mock from "./mock";
 
@@ -51,25 +51,42 @@ function isApiError(err: unknown): err is ApiError {
   return err instanceof ApiError;
 }
 
-export async function listPosts(): Promise<Post[]> {
+// The gateway serializes the protobuf int32 fields with their proto JSON names,
+// which are camelCase (`totalPages`, not `total_pages`).
+type RawPostPage = {
+  posts?: Post[];
+  total?: number;
+  page?: number;
+  totalPages?: number;
+};
+
+function normalizePostPage(data: RawPostPage, fallbackPage: number): PostPage {
+  const posts = data.posts ?? [];
+  const total = data.total ?? posts.length;
+  const page = data.page ?? fallbackPage;
+  const totalPages = data.totalPages ?? (total > 0 ? Math.ceil(total / 10) : 0);
+  return { posts, total, page, totalPages };
+}
+
+export async function listPosts(page = 1): Promise<PostPage> {
   try {
-    const data = await request<{ posts?: Post[] }>("/v1/posts");
-    return data.posts ?? [];
+    const data = await request<RawPostPage>(`/v1/posts?page=${page}`);
+    return normalizePostPage(data, page);
   } catch (err) {
     if (isApiError(err)) throw err;
-    return mock.listPosts();
+    return mock.listPosts(page);
   }
 }
 
-export async function listUserPosts(username: string): Promise<Post[]> {
+export async function listUserPosts(username: string, page = 1): Promise<PostPage> {
   try {
-    const data = await request<{ posts?: Post[] }>(
-      `/v1/users/${encodeURIComponent(username)}/posts`,
+    const data = await request<RawPostPage>(
+      `/v1/users/${encodeURIComponent(username)}/posts?page=${page}`,
     );
-    return data.posts ?? [];
+    return normalizePostPage(data, page);
   } catch (err) {
     if (isApiError(err)) throw err;
-    return mock.listUserPosts(username);
+    return mock.listUserPosts(username, page);
   }
 }
 
