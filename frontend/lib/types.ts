@@ -24,6 +24,16 @@ export interface PostPage {
   totalPages: number;
 }
 
+export interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
+  username: string;
+  parentId: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface Session {
   token: string;
   user: User;

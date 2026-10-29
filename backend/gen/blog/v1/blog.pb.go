@@ -1327,6 +1327,396 @@ func (x *UpdateSettingsResponse) GetSettings() *Settings {
 	return nil
 }
 
+// Comment is a rich-text comment (or reply) attached to a post. The content is
+// stored the same way as post content (a TipTap JSON document).
+type Comment struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Id     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PostId string                 `protobuf:"bytes,2,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	UserId string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// username is denormalized from the users table so callers can render without
+	// a join.
+	Username string `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	// parent_id is empty for top-level comments; otherwise it references the
+	// comment being replied to.
+	ParentId string `protobuf:"bytes,5,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	Content  string `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
+	// RFC 3339 timestamp.
+	CreatedAt     string `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Comment) Reset() {
+	*x = Comment{}
+	mi := &file_blog_v1_blog_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Comment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Comment) ProtoMessage() {}
+
+func (x *Comment) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Comment.ProtoReflect.Descriptor instead.
+func (*Comment) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *Comment) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Comment) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+func (x *Comment) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *Comment) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *Comment) GetParentId() string {
+	if x != nil {
+		return x.ParentId
+	}
+	return ""
+}
+
+func (x *Comment) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *Comment) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type CreateCommentRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	PostId string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	// parent_id is empty when the comment is a top-level comment.
+	ParentId      string `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	Content       string `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCommentRequest) Reset() {
+	*x = CreateCommentRequest{}
+	mi := &file_blog_v1_blog_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCommentRequest) ProtoMessage() {}
+
+func (x *CreateCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCommentRequest.ProtoReflect.Descriptor instead.
+func (*CreateCommentRequest) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *CreateCommentRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+func (x *CreateCommentRequest) GetParentId() string {
+	if x != nil {
+		return x.ParentId
+	}
+	return ""
+}
+
+func (x *CreateCommentRequest) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+type CreateCommentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Comment       *Comment               `protobuf:"bytes,1,opt,name=comment,proto3" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCommentResponse) Reset() {
+	*x = CreateCommentResponse{}
+	mi := &file_blog_v1_blog_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCommentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCommentResponse) ProtoMessage() {}
+
+func (x *CreateCommentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCommentResponse.ProtoReflect.Descriptor instead.
+func (*CreateCommentResponse) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *CreateCommentResponse) GetComment() *Comment {
+	if x != nil {
+		return x.Comment
+	}
+	return nil
+}
+
+type ListCommentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCommentsRequest) Reset() {
+	*x = ListCommentsRequest{}
+	mi := &file_blog_v1_blog_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCommentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCommentsRequest) ProtoMessage() {}
+
+func (x *ListCommentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCommentsRequest.ProtoReflect.Descriptor instead.
+func (*ListCommentsRequest) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ListCommentsRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+type ListCommentsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// comments is a flat list ordered oldest-first. The client reconstructs the
+	// nested structure using parent_id.
+	Comments      []*Comment `protobuf:"bytes,1,rep,name=comments,proto3" json:"comments,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCommentsResponse) Reset() {
+	*x = ListCommentsResponse{}
+	mi := &file_blog_v1_blog_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCommentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCommentsResponse) ProtoMessage() {}
+
+func (x *ListCommentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCommentsResponse.ProtoReflect.Descriptor instead.
+func (*ListCommentsResponse) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ListCommentsResponse) GetComments() []*Comment {
+	if x != nil {
+		return x.Comments
+	}
+	return nil
+}
+
+type UpdateCommentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCommentRequest) Reset() {
+	*x = UpdateCommentRequest{}
+	mi := &file_blog_v1_blog_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCommentRequest) ProtoMessage() {}
+
+func (x *UpdateCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCommentRequest.ProtoReflect.Descriptor instead.
+func (*UpdateCommentRequest) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *UpdateCommentRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateCommentRequest) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+type UpdateCommentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Comment       *Comment               `protobuf:"bytes,1,opt,name=comment,proto3" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCommentResponse) Reset() {
+	*x = UpdateCommentResponse{}
+	mi := &file_blog_v1_blog_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCommentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCommentResponse) ProtoMessage() {}
+
+func (x *UpdateCommentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_v1_blog_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCommentResponse.ProtoReflect.Descriptor instead.
+func (*UpdateCommentResponse) Descriptor() ([]byte, []int) {
+	return file_blog_v1_blog_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *UpdateCommentResponse) GetComment() *Comment {
+	if x != nil {
+		return x.Comment
+	}
+	return nil
+}
+
 var File_blog_v1_blog_proto protoreflect.FileDescriptor
 
 const file_blog_v1_blog_proto_rawDesc = "" +
@@ -1408,7 +1798,32 @@ const file_blog_v1_blog_proto_rawDesc = "" +
 	"\x15UpdateSettingsRequest\x12-\n" +
 	"\bsettings\x18\x01 \x01(\v2\x11.blog.v1.SettingsR\bsettings\"G\n" +
 	"\x16UpdateSettingsResponse\x12-\n" +
-	"\bsettings\x18\x01 \x01(\v2\x11.blog.v1.SettingsR\bsettings2\xa4\b\n" +
+	"\bsettings\x18\x01 \x01(\v2\x11.blog.v1.SettingsR\bsettings\"\xbd\x01\n" +
+	"\aComment\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\apost_id\x18\x02 \x01(\tR\x06postId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x1a\n" +
+	"\busername\x18\x04 \x01(\tR\busername\x12\x1b\n" +
+	"\tparent_id\x18\x05 \x01(\tR\bparentId\x12\x18\n" +
+	"\acontent\x18\x06 \x01(\tR\acontent\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\"f\n" +
+	"\x14CreateCommentRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x1b\n" +
+	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x18\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\"C\n" +
+	"\x15CreateCommentResponse\x12*\n" +
+	"\acomment\x18\x01 \x01(\v2\x10.blog.v1.CommentR\acomment\".\n" +
+	"\x13ListCommentsRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\"D\n" +
+	"\x14ListCommentsResponse\x12,\n" +
+	"\bcomments\x18\x01 \x03(\v2\x10.blog.v1.CommentR\bcomments\"@\n" +
+	"\x14UpdateCommentRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\"C\n" +
+	"\x15UpdateCommentResponse\x12*\n" +
+	"\acomment\x18\x01 \x01(\v2\x10.blog.v1.CommentR\acomment2\xfe\n" +
+	"\n" +
 	"\vBlogService\x12[\n" +
 	"\n" +
 	"CreateUser\x12\x1a.blog.v1.CreateUserRequest\x1a\x1b.blog.v1.CreateUserResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/users\x12L\n" +
@@ -1425,7 +1840,10 @@ const file_blog_v1_blog_proto_rawDesc = "" +
 	"\tListPosts\x12\x19.blog.v1.ListPostsRequest\x1a\x1a.blog.v1.ListPostsResponse\"\x11\x82\xd3\xe4\x93\x02\v\x12\t/v1/posts\x12r\n" +
 	"\rListUserPosts\x12\x1d.blog.v1.ListUserPostsRequest\x1a\x1e.blog.v1.ListUserPostsResponse\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/users/{username}/posts\x12^\n" +
 	"\vGetSettings\x12\x1b.blog.v1.GetSettingsRequest\x1a\x1c.blog.v1.GetSettingsResponse\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/settings\x12j\n" +
-	"\x0eUpdateSettings\x12\x1e.blog.v1.UpdateSettingsRequest\x1a\x1f.blog.v1.UpdateSettingsResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/v1/settingsB<Z:github.com/MucaSan/komitty-blog/backend/gen/blog/v1;blogv1b\x06proto3"
+	"\x0eUpdateSettings\x12\x1e.blog.v1.UpdateSettingsRequest\x1a\x1f.blog.v1.UpdateSettingsResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/v1/settings\x12w\n" +
+	"\rCreateComment\x12\x1d.blog.v1.CreateCommentRequest\x1a\x1e.blog.v1.CreateCommentResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/posts/{post_id}/comments\x12q\n" +
+	"\fListComments\x12\x1c.blog.v1.ListCommentsRequest\x1a\x1d.blog.v1.ListCommentsResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/v1/posts/{post_id}/comments\x12l\n" +
+	"\rUpdateComment\x12\x1d.blog.v1.UpdateCommentRequest\x1a\x1e.blog.v1.UpdateCommentResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*2\x11/v1/comments/{id}B<Z:github.com/MucaSan/komitty-blog/backend/gen/blog/v1;blogv1b\x06proto3"
 
 var (
 	file_blog_v1_blog_proto_rawDescOnce sync.Once
@@ -1439,7 +1857,7 @@ func file_blog_v1_blog_proto_rawDescGZIP() []byte {
 	return file_blog_v1_blog_proto_rawDescData
 }
 
-var file_blog_v1_blog_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_blog_v1_blog_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_blog_v1_blog_proto_goTypes = []any{
 	(*User)(nil),                   // 0: blog.v1.User
 	(*Post)(nil),                   // 1: blog.v1.Post
@@ -1466,6 +1884,13 @@ var file_blog_v1_blog_proto_goTypes = []any{
 	(*GetSettingsResponse)(nil),    // 22: blog.v1.GetSettingsResponse
 	(*UpdateSettingsRequest)(nil),  // 23: blog.v1.UpdateSettingsRequest
 	(*UpdateSettingsResponse)(nil), // 24: blog.v1.UpdateSettingsResponse
+	(*Comment)(nil),                // 25: blog.v1.Comment
+	(*CreateCommentRequest)(nil),   // 26: blog.v1.CreateCommentRequest
+	(*CreateCommentResponse)(nil),  // 27: blog.v1.CreateCommentResponse
+	(*ListCommentsRequest)(nil),    // 28: blog.v1.ListCommentsRequest
+	(*ListCommentsResponse)(nil),   // 29: blog.v1.ListCommentsResponse
+	(*UpdateCommentRequest)(nil),   // 30: blog.v1.UpdateCommentRequest
+	(*UpdateCommentResponse)(nil),  // 31: blog.v1.UpdateCommentResponse
 }
 var file_blog_v1_blog_proto_depIdxs = []int32{
 	0,  // 0: blog.v1.CreateUserResponse.user:type_name -> blog.v1.User
@@ -1478,33 +1903,42 @@ var file_blog_v1_blog_proto_depIdxs = []int32{
 	20, // 7: blog.v1.GetSettingsResponse.settings:type_name -> blog.v1.Settings
 	20, // 8: blog.v1.UpdateSettingsRequest.settings:type_name -> blog.v1.Settings
 	20, // 9: blog.v1.UpdateSettingsResponse.settings:type_name -> blog.v1.Settings
-	2,  // 10: blog.v1.BlogService.CreateUser:input_type -> blog.v1.CreateUserRequest
-	4,  // 11: blog.v1.BlogService.Login:input_type -> blog.v1.LoginRequest
-	6,  // 12: blog.v1.BlogService.CreatePost:input_type -> blog.v1.CreatePostRequest
-	8,  // 13: blog.v1.BlogService.UploadImage:input_type -> blog.v1.UploadImageRequest
-	10, // 14: blog.v1.BlogService.UpdatePost:input_type -> blog.v1.UpdatePostRequest
-	12, // 15: blog.v1.BlogService.DeletePost:input_type -> blog.v1.DeletePostRequest
-	14, // 16: blog.v1.BlogService.GetPost:input_type -> blog.v1.GetPostRequest
-	16, // 17: blog.v1.BlogService.ListPosts:input_type -> blog.v1.ListPostsRequest
-	18, // 18: blog.v1.BlogService.ListUserPosts:input_type -> blog.v1.ListUserPostsRequest
-	21, // 19: blog.v1.BlogService.GetSettings:input_type -> blog.v1.GetSettingsRequest
-	23, // 20: blog.v1.BlogService.UpdateSettings:input_type -> blog.v1.UpdateSettingsRequest
-	3,  // 21: blog.v1.BlogService.CreateUser:output_type -> blog.v1.CreateUserResponse
-	5,  // 22: blog.v1.BlogService.Login:output_type -> blog.v1.LoginResponse
-	7,  // 23: blog.v1.BlogService.CreatePost:output_type -> blog.v1.CreatePostResponse
-	9,  // 24: blog.v1.BlogService.UploadImage:output_type -> blog.v1.UploadImageResponse
-	11, // 25: blog.v1.BlogService.UpdatePost:output_type -> blog.v1.UpdatePostResponse
-	13, // 26: blog.v1.BlogService.DeletePost:output_type -> blog.v1.DeletePostResponse
-	15, // 27: blog.v1.BlogService.GetPost:output_type -> blog.v1.GetPostResponse
-	17, // 28: blog.v1.BlogService.ListPosts:output_type -> blog.v1.ListPostsResponse
-	19, // 29: blog.v1.BlogService.ListUserPosts:output_type -> blog.v1.ListUserPostsResponse
-	22, // 30: blog.v1.BlogService.GetSettings:output_type -> blog.v1.GetSettingsResponse
-	24, // 31: blog.v1.BlogService.UpdateSettings:output_type -> blog.v1.UpdateSettingsResponse
-	21, // [21:32] is the sub-list for method output_type
-	10, // [10:21] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	25, // 10: blog.v1.CreateCommentResponse.comment:type_name -> blog.v1.Comment
+	25, // 11: blog.v1.ListCommentsResponse.comments:type_name -> blog.v1.Comment
+	25, // 12: blog.v1.UpdateCommentResponse.comment:type_name -> blog.v1.Comment
+	2,  // 13: blog.v1.BlogService.CreateUser:input_type -> blog.v1.CreateUserRequest
+	4,  // 14: blog.v1.BlogService.Login:input_type -> blog.v1.LoginRequest
+	6,  // 15: blog.v1.BlogService.CreatePost:input_type -> blog.v1.CreatePostRequest
+	8,  // 16: blog.v1.BlogService.UploadImage:input_type -> blog.v1.UploadImageRequest
+	10, // 17: blog.v1.BlogService.UpdatePost:input_type -> blog.v1.UpdatePostRequest
+	12, // 18: blog.v1.BlogService.DeletePost:input_type -> blog.v1.DeletePostRequest
+	14, // 19: blog.v1.BlogService.GetPost:input_type -> blog.v1.GetPostRequest
+	16, // 20: blog.v1.BlogService.ListPosts:input_type -> blog.v1.ListPostsRequest
+	18, // 21: blog.v1.BlogService.ListUserPosts:input_type -> blog.v1.ListUserPostsRequest
+	21, // 22: blog.v1.BlogService.GetSettings:input_type -> blog.v1.GetSettingsRequest
+	23, // 23: blog.v1.BlogService.UpdateSettings:input_type -> blog.v1.UpdateSettingsRequest
+	26, // 24: blog.v1.BlogService.CreateComment:input_type -> blog.v1.CreateCommentRequest
+	28, // 25: blog.v1.BlogService.ListComments:input_type -> blog.v1.ListCommentsRequest
+	30, // 26: blog.v1.BlogService.UpdateComment:input_type -> blog.v1.UpdateCommentRequest
+	3,  // 27: blog.v1.BlogService.CreateUser:output_type -> blog.v1.CreateUserResponse
+	5,  // 28: blog.v1.BlogService.Login:output_type -> blog.v1.LoginResponse
+	7,  // 29: blog.v1.BlogService.CreatePost:output_type -> blog.v1.CreatePostResponse
+	9,  // 30: blog.v1.BlogService.UploadImage:output_type -> blog.v1.UploadImageResponse
+	11, // 31: blog.v1.BlogService.UpdatePost:output_type -> blog.v1.UpdatePostResponse
+	13, // 32: blog.v1.BlogService.DeletePost:output_type -> blog.v1.DeletePostResponse
+	15, // 33: blog.v1.BlogService.GetPost:output_type -> blog.v1.GetPostResponse
+	17, // 34: blog.v1.BlogService.ListPosts:output_type -> blog.v1.ListPostsResponse
+	19, // 35: blog.v1.BlogService.ListUserPosts:output_type -> blog.v1.ListUserPostsResponse
+	22, // 36: blog.v1.BlogService.GetSettings:output_type -> blog.v1.GetSettingsResponse
+	24, // 37: blog.v1.BlogService.UpdateSettings:output_type -> blog.v1.UpdateSettingsResponse
+	27, // 38: blog.v1.BlogService.CreateComment:output_type -> blog.v1.CreateCommentResponse
+	29, // 39: blog.v1.BlogService.ListComments:output_type -> blog.v1.ListCommentsResponse
+	31, // 40: blog.v1.BlogService.UpdateComment:output_type -> blog.v1.UpdateCommentResponse
+	27, // [27:41] is the sub-list for method output_type
+	13, // [13:27] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_blog_v1_blog_proto_init() }
@@ -1518,7 +1952,7 @@ func file_blog_v1_blog_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_blog_v1_blog_proto_rawDesc), len(file_blog_v1_blog_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

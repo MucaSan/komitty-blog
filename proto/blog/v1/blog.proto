@@ -148,6 +148,53 @@ message UpdateSettingsResponse {
   Settings settings = 1;
 }
 
+// Comment is a rich-text comment (or reply) attached to a post. The content is
+// stored the same way as post content (a TipTap JSON document).
+message Comment {
+  string id = 1;
+  string post_id = 2;
+  string user_id = 3;
+  // username is denormalized from the users table so callers can render without
+  // a join.
+  string username = 4;
+  // parent_id is empty for top-level comments; otherwise it references the
+  // comment being replied to.
+  string parent_id = 5;
+  string content = 6;
+  // RFC 3339 timestamp.
+  string created_at = 7;
+}
+
+message CreateCommentRequest {
+  string post_id = 1;
+  // parent_id is empty when the comment is a top-level comment.
+  string parent_id = 2;
+  string content = 3;
+}
+
+message CreateCommentResponse {
+  Comment comment = 1;
+}
+
+message ListCommentsRequest {
+  string post_id = 1;
+}
+
+message ListCommentsResponse {
+  // comments is a flat list ordered oldest-first. The client reconstructs the
+  // nested structure using parent_id.
+  repeated Comment comments = 1;
+}
+
+message UpdateCommentRequest {
+  string id = 1;
+  string content = 2;
+}
+
+message UpdateCommentResponse {
+  Comment comment = 1;
+}
+
 service BlogService {
   // CreateUser registers a new account.
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
@@ -230,6 +277,29 @@ service BlogService {
   rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse) {
     option (google.api.http) = {
       post: "/v1/settings"
+      body: "*"
+    };
+  }
+
+  // CreateComment adds a comment (or a reply) to a post.
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse) {
+    option (google.api.http) = {
+      post: "/v1/posts/{post_id}/comments"
+      body: "*"
+    };
+  }
+
+  // ListComments returns all comments of a post, oldest first.
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/posts/{post_id}/comments"
+    };
+  }
+
+  // UpdateComment edits an existing comment. Only the author may edit it.
+  rpc UpdateComment(UpdateCommentRequest) returns (UpdateCommentResponse) {
+    option (google.api.http) = {
+      patch: "/v1/comments/{id}"
       body: "*"
     };
   }

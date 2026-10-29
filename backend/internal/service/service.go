@@ -504,6 +504,163 @@ func settingsToProto(doc settingsDoc) *blogv1.Settings {
 	return &blogv1.Settings{Theme: doc.Theme, Toolbar: doc.Toolbar}
 }
 
+// CreateComment adds a comment (or reply) to a post.
+func (s *Service) CreateComment(ctx context.Context, req *blogv1.CreateCommentRequest) (*blogv1.CreateCommentResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	postID := strings.TrimSpace(req.GetPostId())
+	if postID == "" {
+		return nil, status.Error(codes.InvalidArgument, "post id is required")
+	}
+	content := req.GetContent()
+	if strings.TrimSpace(content) == "" {
+		return nil, status.Error(codes.InvalidArgument, "comment content is required")
+	}
+
+	// The post must exist; the FK constraint would catch this too, but a clear
+	// NotFound beats a generic internal error.
+	var one int
+	err = s.pool.QueryRow(ctx, `SELECT 1 FROM posts WHERE id = $1`, postID).Scan(&one)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, "post not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load post: %v", err)
+	}
+
+	parentID := strings.TrimSpace(req.GetParentId())
+	var parent any
+	if parentID != "" {
+		var parentPostID string
+		err := s.pool.QueryRow(ctx, `SELECT post_id FROM comments WHERE id = $1`, parentID).Scan(&parentPostID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, status.Error(codes.InvalidArgument, "parent comment not found")
+		}
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to load parent comment: %v", err)
+		}
+		if parentPostID != postID {
+			return nil, status.Error(codes.InvalidArgument, "parent comment belongs to a different post")
+		}
+		parent = parentID
+	}
+
+	id := uuid.NewString()
+	var createdAt time.Time
+	err = s.pool.QueryRow(ctx, `
+		INSERT INTO comments (id, post_id, user_id, parent_id, content)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING created_at
+	`, id, postID, u.id, parent, content).Scan(&createdAt)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create comment: %v", err)
+	}
+
+	return &blogv1.CreateCommentResponse{
+		Comment: &blogv1.Comment{
+			Id:        id,
+			PostId:    postID,
+			UserId:    u.id,
+			Username:  u.username,
+			ParentId:  parentID,
+			Content:   content,
+			CreatedAt: createdAt.UTC().Format(time.RFC3339),
+		},
+	}, nil
+}
+
+// ListComments returns all comments of a post, oldest first. The list is flat;
+// callers reconstruct the nested tree using parent_id.
+func (s *Service) ListComments(ctx context.Context, req *blogv1.ListCommentsRequest) (*blogv1.ListCommentsResponse, error) {
+	postID := strings.TrimSpace(req.GetPostId())
+	if postID == "" {
+		return nil, status.Error(codes.InvalidArgument, "post id is required")
+	}
+
+	rows, err := s.pool.Query(ctx, `
+		SELECT c.id, c.post_id, c.user_id, u.username, COALESCE(c.parent_id::text, ''), c.content, c.created_at
+		FROM comments c
+		JOIN users u ON u.id = c.user_id
+		WHERE c.post_id = $1
+		ORDER BY c.created_at ASC, c.id ASC
+	`, postID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list comments: %v", err)
+	}
+	defer rows.Close()
+
+	var comments []*blogv1.Comment
+	for rows.Next() {
+		var (
+			c         blogv1.Comment
+			createdAt time.Time
+		)
+		if err := rows.Scan(&c.Id, &c.PostId, &c.UserId, &c.Username, &c.ParentId, &c.Content, &createdAt); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to read comments: %v", err)
+		}
+		c.CreatedAt = createdAt.UTC().Format(time.RFC3339)
+		comments = append(comments, &c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read comments: %v", err)
+	}
+
+	return &blogv1.ListCommentsResponse{Comments: comments}, nil
+}
+
+// UpdateComment edits an existing comment. Only the comment author may edit it.
+func (s *Service) UpdateComment(ctx context.Context, req *blogv1.UpdateCommentRequest) (*blogv1.UpdateCommentResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	id := strings.TrimSpace(req.GetId())
+	if id == "" {
+		return nil, status.Error(codes.InvalidArgument, "comment id is required")
+	}
+	content := req.GetContent()
+	if strings.TrimSpace(content) == "" {
+		return nil, status.Error(codes.InvalidArgument, "comment content is required")
+	}
+
+	var ownerID string
+	err = s.pool.QueryRow(ctx, `SELECT user_id FROM comments WHERE id = $1`, id).Scan(&ownerID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, "comment not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load comment: %v", err)
+	}
+	if ownerID != u.id {
+		return nil, status.Error(codes.PermissionDenied, "you can only edit your own comments")
+	}
+
+	if _, err := s.pool.Exec(ctx, `UPDATE comments SET content = $1 WHERE id = $2`, content, id); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update comment: %v", err)
+	}
+
+	var (
+		c         blogv1.Comment
+		createdAt time.Time
+	)
+	err = s.pool.QueryRow(ctx, `
+		SELECT c.id, c.post_id, c.user_id, u.username, COALESCE(c.parent_id::text, ''), c.content, c.created_at
+		FROM comments c
+		JOIN users u ON u.id = c.user_id
+		WHERE c.id = $1
+	`, id).Scan(&c.Id, &c.PostId, &c.UserId, &c.Username, &c.ParentId, &c.Content, &createdAt)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read updated comment: %v", err)
+	}
+	c.CreatedAt = createdAt.UTC().Format(time.RFC3339)
+
+	return &blogv1.UpdateCommentResponse{Comment: &c}, nil
+}
+
 type userRecord struct {
 	id       string
 	username string

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TableOfContents } from "@/components/TableOfContents";
+import { CommentSection } from "@/components/CommentSection";
 import { useTranslation } from "@/components/LanguageProvider";
 import { deletePost, getPost } from "@/lib/api";
 import { contentToHtml, contentToText, extractHeadings } from "@/lib/content";
@@ -199,6 +200,8 @@ export default function PostPage() {
           <TableOfContents headings={headings} activeId={activeId} />
         </div>
       </article>
+
+      <CommentSection postId={post.id} />
     </main>
   );
 }

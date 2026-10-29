@@ -284,11 +284,13 @@ export function RichTextEditor({
   placeholder,
   onUploadImage,
   initialContent,
+  compact,
 }: {
   onChange?: (json: string, isEmpty: boolean) => void;
   placeholder?: string;
   onUploadImage?: (file: File) => Promise<string>;
   initialContent?: string;
+  compact?: boolean;
 }) {
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const [colorMenuPos, setColorMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -358,7 +360,9 @@ export function RichTextEditor({
     ],
     content: parseInitialContent(initialContent),
     editorProps: {
-      attributes: { class: "richtext__content" },
+      attributes: {
+        class: compact ? "richtext__content richtext__content--compact" : "richtext__content",
+      },
     },
     onUpdate: ({ editor }) => {
       onChange?.(JSON.stringify(editor.getJSON()), editor.isEmpty);
@@ -600,6 +604,7 @@ export function RichTextEditor({
     "toolbar",
     toolbarPosition === "down" && !floating ? "toolbar--bottom" : "",
     floating ? "toolbar--floating" : "",
+    compact ? "toolbar--compact" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -680,7 +685,7 @@ export function RichTextEditor({
   );
 
   return (
-    <div className="richtext">
+    <div className={compact ? "richtext richtext--compact" : "richtext"}>
       {toolbarPosition !== "down" && toolbarElement}
 
       {tip && (
