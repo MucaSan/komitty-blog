@@ -358,16 +358,6 @@ export function RichTextEditor({
     content: parseInitialContent(initialContent),
     editorProps: {
       attributes: { class: "richtext__content" },
-      // Paste as plain text: pasting from another source must not carry over
-      // its formatting (font size, colour, …). When the clipboard has plain
-      // text we replace the default HTML paste with a plain-text insert.
-      handlePaste: (view, event) => {
-        const text = event.clipboardData?.getData("text/plain");
-        if (!text) return false;
-        event.preventDefault();
-        view.pasteText(text, event);
-        return true;
-      },
     },
     onUpdate: ({ editor }) => {
       onChange?.(JSON.stringify(editor.getJSON()), editor.isEmpty);
