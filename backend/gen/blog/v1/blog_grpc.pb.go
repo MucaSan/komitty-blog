@@ -30,6 +30,9 @@ const (
 	BlogService_ListUserPosts_FullMethodName  = "/blog.v1.BlogService/ListUserPosts"
 	BlogService_GetSettings_FullMethodName    = "/blog.v1.BlogService/GetSettings"
 	BlogService_UpdateSettings_FullMethodName = "/blog.v1.BlogService/UpdateSettings"
+	BlogService_CreateComment_FullMethodName  = "/blog.v1.BlogService/CreateComment"
+	BlogService_ListComments_FullMethodName   = "/blog.v1.BlogService/ListComments"
+	BlogService_UpdateComment_FullMethodName  = "/blog.v1.BlogService/UpdateComment"
 )
 
 // BlogServiceClient is the client API for BlogService service.
@@ -60,6 +63,12 @@ type BlogServiceClient interface {
 	GetSettings(ctx context.Context, in *GetSettingsRequest, opts ...grpc.CallOption) (*GetSettingsResponse, error)
 	// UpdateSettings saves the authenticated user's visual settings.
 	UpdateSettings(ctx context.Context, in *UpdateSettingsRequest, opts ...grpc.CallOption) (*UpdateSettingsResponse, error)
+	// CreateComment adds a comment (or a reply) to a post.
+	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error)
+	// ListComments returns all comments of a post, oldest first.
+	ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error)
+	// UpdateComment edits an existing comment. Only the author may edit it.
+	UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*UpdateCommentResponse, error)
 }
 
 type blogServiceClient struct {
@@ -180,6 +189,36 @@ func (c *blogServiceClient) UpdateSettings(ctx context.Context, in *UpdateSettin
 	return out, nil
 }
 
+func (c *blogServiceClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateCommentResponse)
+	err := c.cc.Invoke(ctx, BlogService_CreateComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *blogServiceClient) ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCommentsResponse)
+	err := c.cc.Invoke(ctx, BlogService_ListComments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *blogServiceClient) UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*UpdateCommentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateCommentResponse)
+	err := c.cc.Invoke(ctx, BlogService_UpdateComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BlogServiceServer is the server API for BlogService service.
 // All implementations must embed UnimplementedBlogServiceServer
 // for forward compatibility.
@@ -208,6 +247,12 @@ type BlogServiceServer interface {
 	GetSettings(context.Context, *GetSettingsRequest) (*GetSettingsResponse, error)
 	// UpdateSettings saves the authenticated user's visual settings.
 	UpdateSettings(context.Context, *UpdateSettingsRequest) (*UpdateSettingsResponse, error)
+	// CreateComment adds a comment (or a reply) to a post.
+	CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error)
+	// ListComments returns all comments of a post, oldest first.
+	ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error)
+	// UpdateComment edits an existing comment. Only the author may edit it.
+	UpdateComment(context.Context, *UpdateCommentRequest) (*UpdateCommentResponse, error)
 	mustEmbedUnimplementedBlogServiceServer()
 }
 
@@ -250,6 +295,15 @@ func (UnimplementedBlogServiceServer) GetSettings(context.Context, *GetSettingsR
 }
 func (UnimplementedBlogServiceServer) UpdateSettings(context.Context, *UpdateSettingsRequest) (*UpdateSettingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSettings not implemented")
+}
+func (UnimplementedBlogServiceServer) CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateComment not implemented")
+}
+func (UnimplementedBlogServiceServer) ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListComments not implemented")
+}
+func (UnimplementedBlogServiceServer) UpdateComment(context.Context, *UpdateCommentRequest) (*UpdateCommentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateComment not implemented")
 }
 func (UnimplementedBlogServiceServer) mustEmbedUnimplementedBlogServiceServer() {}
 func (UnimplementedBlogServiceServer) testEmbeddedByValue()                     {}
@@ -470,6 +524,60 @@ func _BlogService_UpdateSettings_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlogService_CreateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).CreateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_CreateComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).CreateComment(ctx, req.(*CreateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BlogService_ListComments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCommentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).ListComments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_ListComments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).ListComments(ctx, req.(*ListCommentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BlogService_UpdateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).UpdateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_UpdateComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).UpdateComment(ctx, req.(*UpdateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BlogService_ServiceDesc is the grpc.ServiceDesc for BlogService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -520,6 +628,18 @@ var BlogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSettings",
 			Handler:    _BlogService_UpdateSettings_Handler,
+		},
+		{
+			MethodName: "CreateComment",
+			Handler:    _BlogService_CreateComment_Handler,
+		},
+		{
+			MethodName: "ListComments",
+			Handler:    _BlogService_ListComments_Handler,
+		},
+		{
+			MethodName: "UpdateComment",
+			Handler:    _BlogService_UpdateComment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

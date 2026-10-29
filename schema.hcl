@@ -135,3 +135,56 @@ table "settings" {
     on_delete   = CASCADE
   }
 }
+
+table "comments" {
+  schema = schema.public
+  column "id" {
+    type = uuid
+    null = false
+  }
+  column "post_id" {
+    type = uuid
+    null = false
+  }
+  column "user_id" {
+    type = uuid
+    null = false
+  }
+  column "parent_id" {
+    type = uuid
+    null = true
+  }
+  column "content" {
+    type = text
+    null = false
+  }
+  column "created_at" {
+    type = timestamptz
+    null = false
+    default = sql("now()")
+  }
+  primary_key {
+    columns = [column.id]
+  }
+  foreign_key "comments_post_id_fkey" {
+    columns     = [column.post_id]
+    ref_columns = [table.posts.column.id]
+    on_delete   = CASCADE
+  }
+  foreign_key "comments_user_id_fkey" {
+    columns     = [column.user_id]
+    ref_columns = [table.users.column.id]
+    on_delete   = CASCADE
+  }
+  foreign_key "comments_parent_id_fkey" {
+    columns     = [column.parent_id]
+    ref_columns = [table.comments.column.id]
+    on_delete   = CASCADE
+  }
+  index "comments_post_id_idx" {
+    columns = [column.post_id]
+  }
+  index "comments_parent_id_idx" {
+    columns = [column.parent_id]
+  }
+}

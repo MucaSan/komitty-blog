@@ -2,7 +2,7 @@
 // reachable. It persists to localStorage so signup → login → create post all
 // work end-to-end during local development without a database.
 
-import type { Post, PostPage, Session, Settings, User } from "./types";
+import type { Comment, Post, PostPage, Session, Settings, User } from "./types";
 import { DEFAULT_SETTINGS } from "./settings";
 
 interface StoredUser extends User {
@@ -12,6 +12,7 @@ interface StoredUser extends User {
 const USERS_KEY = "komitty_mock_users";
 const POSTS_KEY = "komitty_mock_posts";
 const SETTINGS_KEY = "komitty_mock_settings";
+const COMMENTS_KEY = "komitty_mock_comments";
 
 const SEED_USERS: StoredUser[] = [
   { id: "u-ada", username: "ada", password: "password1", createdAt: "2026-09-01T10:00:00Z", isPrime: true },
@@ -167,4 +168,45 @@ export function updateSettings(settings: Settings, session: Session): Settings {
   all[session.user.id] = settings;
   writeJSON(SETTINGS_KEY, all);
   return settings;
+}
+
+function getComments(): Comment[] {
+  return readJSON<Comment[]>(COMMENTS_KEY, []);
+}
+
+export function listComments(postId: string): Comment[] {
+  return getComments()
+    .filter((c) => c.postId === postId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function createComment(
+  postId: string,
+  parentId: string,
+  content: string,
+  session: Session,
+): Comment {
+  const comment: Comment = {
+    id: `c-${Date.now()}`,
+    postId,
+    userId: session.user.id,
+    username: session.user.username,
+    parentId,
+    content,
+    createdAt: new Date().toISOString(),
+  };
+  const all = getComments();
+  all.push(comment);
+  writeJSON(COMMENTS_KEY, all);
+  return comment;
+}
+
+export function updateComment(id: string, content: string, session: Session): Comment {
+  const all = getComments();
+  const idx = all.findIndex((c) => c.id === id);
+  if (idx === -1) throw new Error("comment not found");
+  if (all[idx].userId !== session.user.id) throw new Error("you can only edit your own comments");
+  all[idx] = { ...all[idx], content };
+  writeJSON(COMMENTS_KEY, all);
+  return all[idx];
 }

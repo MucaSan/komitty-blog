@@ -5,7 +5,7 @@
 // backend is unreachable (e.g. not started yet), we transparently fall back to
 // the in-browser mock store so the UI remains fully usable in development.
 
-import type { Post, PostPage, Session, Settings, User } from "./types";
+import type { Comment, Post, PostPage, Session, Settings, User } from "./types";
 import { DEFAULT_SETTINGS, isValidSettings } from "./settings";
 import * as mock from "./mock";
 
@@ -210,5 +210,60 @@ export async function updateSettings(
   } catch (err) {
     if (isApiError(err)) throw err;
     return mock.updateSettings(settings, session);
+  }
+}
+
+export async function listComments(postId: string): Promise<Comment[]> {
+  try {
+    const data = await request<{ comments?: Comment[] }>(
+      `/v1/posts/${encodeURIComponent(postId)}/comments`,
+    );
+    return data.comments ?? [];
+  } catch (err) {
+    if (isApiError(err)) throw err;
+    return mock.listComments(postId);
+  }
+}
+
+export async function createComment(
+  postId: string,
+  parentId: string,
+  content: string,
+  session: Session,
+): Promise<Comment> {
+  try {
+    const data = await request<{ comment: Comment }>(
+      `/v1/posts/${encodeURIComponent(postId)}/comments`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.token}` },
+        body: JSON.stringify({ parentId: parentId || undefined, content }),
+      },
+    );
+    return data.comment;
+  } catch (err) {
+    if (isApiError(err)) throw err;
+    return mock.createComment(postId, parentId, content, session);
+  }
+}
+
+export async function updateComment(
+  id: string,
+  content: string,
+  session: Session,
+): Promise<Comment> {
+  try {
+    const data = await request<{ comment: Comment }>(
+      `/v1/comments/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${session.token}` },
+        body: JSON.stringify({ content }),
+      },
+    );
+    return data.comment;
+  } catch (err) {
+    if (isApiError(err)) throw err;
+    return mock.updateComment(id, content, session);
   }
 }
