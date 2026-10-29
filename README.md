@@ -50,6 +50,8 @@ komitty-blog/
 | Create a post | `POST /v1/posts` | `CreatePost` |
 | Browse all posts | `GET /v1/posts` | `ListPosts` |
 | Browse a user's posts | `GET /v1/users/{username}/posts` | `ListUserPosts` |
+| Read your visual settings | `GET /v1/settings` | `GetSettings` |
+| Save your visual settings | `POST /v1/settings` | `UpdateSettings` |
 
 Repeat-password is validated on the client; the backend stores a bcrypt hash of
 the password and issues a short-lived JWT used to authorize `CreatePost`.

@@ -94,18 +94,58 @@ message GetPostResponse {
   Post post = 1;
 }
 
-message ListPostsRequest {}
+message ListPostsRequest {
+  // page is 1-based. When 0 or omitted, the first page is returned.
+  int32 page = 1;
+}
 
 message ListPostsResponse {
   repeated Post posts = 1;
+  // total is the number of posts available across all pages.
+  int32 total = 2;
+  // page echoes the requested page (1-based).
+  int32 page = 3;
+  // total_pages is the number of available pages.
+  int32 total_pages = 4;
 }
 
 message ListUserPostsRequest {
   string username = 1;
+  // page is 1-based. When 0 or omitted, the first page is returned.
+  int32 page = 2;
 }
 
 message ListUserPostsResponse {
   repeated Post posts = 1;
+  // total is the number of posts by this user across all pages.
+  int32 total = 2;
+  // page echoes the requested page (1-based).
+  int32 page = 3;
+  // total_pages is the number of available pages.
+  int32 total_pages = 4;
+}
+
+// Settings holds the visual preferences of a user. It is stored as a single
+// JSONB document in the database (see the `settings` table), keyed by user id.
+message Settings {
+  // theme is "dark" (default) or "white".
+  string theme = 1;
+  // toolbar is "top" (default), "down" or "drag".
+  string toolbar = 2;
+}
+
+message GetSettingsRequest {}
+
+message GetSettingsResponse {
+  Settings settings = 1;
+}
+
+message UpdateSettingsRequest {
+  Settings settings = 1;
+}
+
+message UpdateSettingsResponse {
+  Settings settings = 1;
 }
 
 service BlogService {
@@ -175,6 +215,22 @@ service BlogService {
   rpc ListUserPosts(ListUserPostsRequest) returns (ListUserPostsResponse) {
     option (google.api.http) = {
       get: "/v1/users/{username}/posts"
+    };
+  }
+
+  // GetSettings returns the authenticated user's visual settings. Defaults are
+  // returned when the user has not saved any settings yet.
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse) {
+    option (google.api.http) = {
+      get: "/v1/settings"
+    };
+  }
+
+  // UpdateSettings saves the authenticated user's visual settings.
+  rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse) {
+    option (google.api.http) = {
+      post: "/v1/settings"
+      body: "*"
     };
   }
 }

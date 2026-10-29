@@ -2,7 +2,8 @@
 // reachable. It persists to localStorage so signup → login → create post all
 // work end-to-end during local development without a database.
 
-import type { Post, Session, User } from "./types";
+import type { Post, PostPage, Session, Settings, User } from "./types";
+import { DEFAULT_SETTINGS } from "./settings";
 
 interface StoredUser extends User {
   password: string;
@@ -10,6 +11,7 @@ interface StoredUser extends User {
 
 const USERS_KEY = "komitty_mock_users";
 const POSTS_KEY = "komitty_mock_posts";
+const SETTINGS_KEY = "komitty_mock_settings";
 
 const SEED_USERS: StoredUser[] = [
   { id: "u-ada", username: "ada", password: "password1", createdAt: "2026-09-01T10:00:00Z", isPrime: true },
@@ -87,12 +89,27 @@ function stripPassword(user: StoredUser): User {
   return rest;
 }
 
-export function listPosts(): Post[] {
-  return newestFirst(getPosts());
+const MOCK_PAGE_SIZE = 10;
+
+function paginatePosts(posts: Post[], page: number): PostPage {
+  const total = posts.length;
+  const totalPages = total > 0 ? Math.ceil(total / MOCK_PAGE_SIZE) : 0;
+  const current = Math.max(1, page);
+  const start = (current - 1) * MOCK_PAGE_SIZE;
+  return {
+    posts: posts.slice(start, start + MOCK_PAGE_SIZE),
+    total,
+    page: current,
+    totalPages,
+  };
 }
 
-export function listUserPosts(username: string): Post[] {
-  return newestFirst(getPosts().filter((p) => p.username === username));
+export function listPosts(page = 1): PostPage {
+  return paginatePosts(newestFirst(getPosts()), page);
+}
+
+export function listUserPosts(username: string, page = 1): PostPage {
+  return paginatePosts(newestFirst(getPosts().filter((p) => p.username === username)), page);
 }
 
 export function getPost(id: string): Post | null {
@@ -135,4 +152,19 @@ export function createPost(title: string, content: string, session: Session): Po
   posts.unshift(post);
   writeJSON(POSTS_KEY, posts);
   return post;
+}
+
+function getSettingsByUser(): Record<string, Settings> {
+  return readJSON<Record<string, Settings>>(SETTINGS_KEY, {});
+}
+
+export function getSettings(session: Session): Settings {
+  return getSettingsByUser()[session.user.id] ?? DEFAULT_SETTINGS;
+}
+
+export function updateSettings(settings: Settings, session: Session): Settings {
+  const all = getSettingsByUser();
+  all[session.user.id] = settings;
+  writeJSON(SETTINGS_KEY, all);
+  return settings;
 }

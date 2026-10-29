@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BlogService_CreateUser_FullMethodName    = "/blog.v1.BlogService/CreateUser"
-	BlogService_Login_FullMethodName         = "/blog.v1.BlogService/Login"
-	BlogService_CreatePost_FullMethodName    = "/blog.v1.BlogService/CreatePost"
-	BlogService_UploadImage_FullMethodName   = "/blog.v1.BlogService/UploadImage"
-	BlogService_UpdatePost_FullMethodName    = "/blog.v1.BlogService/UpdatePost"
-	BlogService_DeletePost_FullMethodName    = "/blog.v1.BlogService/DeletePost"
-	BlogService_GetPost_FullMethodName       = "/blog.v1.BlogService/GetPost"
-	BlogService_ListPosts_FullMethodName     = "/blog.v1.BlogService/ListPosts"
-	BlogService_ListUserPosts_FullMethodName = "/blog.v1.BlogService/ListUserPosts"
+	BlogService_CreateUser_FullMethodName     = "/blog.v1.BlogService/CreateUser"
+	BlogService_Login_FullMethodName          = "/blog.v1.BlogService/Login"
+	BlogService_CreatePost_FullMethodName     = "/blog.v1.BlogService/CreatePost"
+	BlogService_UploadImage_FullMethodName    = "/blog.v1.BlogService/UploadImage"
+	BlogService_UpdatePost_FullMethodName     = "/blog.v1.BlogService/UpdatePost"
+	BlogService_DeletePost_FullMethodName     = "/blog.v1.BlogService/DeletePost"
+	BlogService_GetPost_FullMethodName        = "/blog.v1.BlogService/GetPost"
+	BlogService_ListPosts_FullMethodName      = "/blog.v1.BlogService/ListPosts"
+	BlogService_ListUserPosts_FullMethodName  = "/blog.v1.BlogService/ListUserPosts"
+	BlogService_GetSettings_FullMethodName    = "/blog.v1.BlogService/GetSettings"
+	BlogService_UpdateSettings_FullMethodName = "/blog.v1.BlogService/UpdateSettings"
 )
 
 // BlogServiceClient is the client API for BlogService service.
@@ -53,6 +55,11 @@ type BlogServiceClient interface {
 	ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
 	ListUserPosts(ctx context.Context, in *ListUserPostsRequest, opts ...grpc.CallOption) (*ListUserPostsResponse, error)
+	// GetSettings returns the authenticated user's visual settings. Defaults are
+	// returned when the user has not saved any settings yet.
+	GetSettings(ctx context.Context, in *GetSettingsRequest, opts ...grpc.CallOption) (*GetSettingsResponse, error)
+	// UpdateSettings saves the authenticated user's visual settings.
+	UpdateSettings(ctx context.Context, in *UpdateSettingsRequest, opts ...grpc.CallOption) (*UpdateSettingsResponse, error)
 }
 
 type blogServiceClient struct {
@@ -153,6 +160,26 @@ func (c *blogServiceClient) ListUserPosts(ctx context.Context, in *ListUserPosts
 	return out, nil
 }
 
+func (c *blogServiceClient) GetSettings(ctx context.Context, in *GetSettingsRequest, opts ...grpc.CallOption) (*GetSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSettingsResponse)
+	err := c.cc.Invoke(ctx, BlogService_GetSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *blogServiceClient) UpdateSettings(ctx context.Context, in *UpdateSettingsRequest, opts ...grpc.CallOption) (*UpdateSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateSettingsResponse)
+	err := c.cc.Invoke(ctx, BlogService_UpdateSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BlogServiceServer is the server API for BlogService service.
 // All implementations must embed UnimplementedBlogServiceServer
 // for forward compatibility.
@@ -176,6 +203,11 @@ type BlogServiceServer interface {
 	ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error)
 	// ListUserPosts returns the posts of a single user, newest first.
 	ListUserPosts(context.Context, *ListUserPostsRequest) (*ListUserPostsResponse, error)
+	// GetSettings returns the authenticated user's visual settings. Defaults are
+	// returned when the user has not saved any settings yet.
+	GetSettings(context.Context, *GetSettingsRequest) (*GetSettingsResponse, error)
+	// UpdateSettings saves the authenticated user's visual settings.
+	UpdateSettings(context.Context, *UpdateSettingsRequest) (*UpdateSettingsResponse, error)
 	mustEmbedUnimplementedBlogServiceServer()
 }
 
@@ -212,6 +244,12 @@ func (UnimplementedBlogServiceServer) ListPosts(context.Context, *ListPostsReque
 }
 func (UnimplementedBlogServiceServer) ListUserPosts(context.Context, *ListUserPostsRequest) (*ListUserPostsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListUserPosts not implemented")
+}
+func (UnimplementedBlogServiceServer) GetSettings(context.Context, *GetSettingsRequest) (*GetSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSettings not implemented")
+}
+func (UnimplementedBlogServiceServer) UpdateSettings(context.Context, *UpdateSettingsRequest) (*UpdateSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateSettings not implemented")
 }
 func (UnimplementedBlogServiceServer) mustEmbedUnimplementedBlogServiceServer() {}
 func (UnimplementedBlogServiceServer) testEmbeddedByValue()                     {}
@@ -396,6 +434,42 @@ func _BlogService_ListUserPosts_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlogService_GetSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).GetSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_GetSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).GetSettings(ctx, req.(*GetSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BlogService_UpdateSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).UpdateSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_UpdateSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).UpdateSettings(ctx, req.(*UpdateSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BlogService_ServiceDesc is the grpc.ServiceDesc for BlogService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -438,6 +512,14 @@ var BlogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListUserPosts",
 			Handler:    _BlogService_ListUserPosts_Handler,
+		},
+		{
+			MethodName: "GetSettings",
+			Handler:    _BlogService_GetSettings_Handler,
+		},
+		{
+			MethodName: "UpdateSettings",
+			Handler:    _BlogService_UpdateSettings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

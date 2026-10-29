@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -299,14 +300,42 @@ func (s *Service) DeletePost(ctx context.Context, req *blogv1.DeletePostRequest)
 	return &blogv1.DeletePostResponse{}, nil
 }
 
-// ListPosts returns all posts, newest first.
-func (s *Service) ListPosts(ctx context.Context, _ *blogv1.ListPostsRequest) (*blogv1.ListPostsResponse, error) {
+// postsPerPage is the fixed page size used by the post feeds. The requirement
+// is "10 publications per page".
+const postsPerPage = 10
+
+// paginate normalizes a 1-based page number and derives the SQL offset and the
+// total number of pages for the given total count.
+func paginate(reqPage, total int32) (page, offset, totalPages int32) {
+	if reqPage < 1 {
+		page = 1
+	} else {
+		page = reqPage
+	}
+	offset = (page - 1) * postsPerPage
+	if total <= 0 {
+		totalPages = 0
+	} else {
+		totalPages = (total + postsPerPage - 1) / postsPerPage
+	}
+	return page, offset, totalPages
+}
+
+// ListPosts returns posts newest first, paginated 10 per page.
+func (s *Service) ListPosts(ctx context.Context, req *blogv1.ListPostsRequest) (*blogv1.ListPostsResponse, error) {
+	var total int32
+	if err := s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM posts`).Scan(&total); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count posts: %v", err)
+	}
+	page, offset, totalPages := paginate(req.GetPage(), total)
+
 	rows, err := s.pool.Query(ctx, `
 		SELECT p.id, p.user_id, u.username, p.title, p.content, p.created_at
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		ORDER BY p.created_at DESC
-	`)
+		LIMIT $1 OFFSET $2
+	`, postsPerPage, offset)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list posts: %v", err)
 	}
@@ -317,15 +346,26 @@ func (s *Service) ListPosts(ctx context.Context, _ *blogv1.ListPostsRequest) (*b
 		return nil, status.Errorf(codes.Internal, "failed to read posts: %v", err)
 	}
 
-	return &blogv1.ListPostsResponse{Posts: posts}, nil
+	return &blogv1.ListPostsResponse{Posts: posts, Total: total, Page: page, TotalPages: totalPages}, nil
 }
 
-// ListUserPosts returns a single user's posts, newest first.
+// ListUserPosts returns a single user's posts newest first, paginated 10 per page.
 func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRequest) (*blogv1.ListUserPostsResponse, error) {
 	username := strings.TrimSpace(req.GetUsername())
 	if username == "" {
 		return nil, status.Error(codes.InvalidArgument, "username is required")
 	}
+
+	var total int32
+	if err := s.pool.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM posts p
+		JOIN users u ON u.id = p.user_id
+		WHERE u.username = $1
+	`, username).Scan(&total); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count user posts: %v", err)
+	}
+	page, offset, totalPages := paginate(req.GetPage(), total)
 
 	rows, err := s.pool.Query(ctx, `
 		SELECT p.id, p.user_id, u.username, p.title, p.content, p.created_at
@@ -333,7 +373,8 @@ func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRe
 		JOIN users u ON u.id = p.user_id
 		WHERE u.username = $1
 		ORDER BY p.created_at DESC
-	`, username)
+		LIMIT $2 OFFSET $3
+	`, username, postsPerPage, offset)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list user posts: %v", err)
 	}
@@ -344,7 +385,123 @@ func (s *Service) ListUserPosts(ctx context.Context, req *blogv1.ListUserPostsRe
 		return nil, status.Errorf(codes.Internal, "failed to read posts: %v", err)
 	}
 
-	return &blogv1.ListUserPostsResponse{Posts: posts}, nil
+	return &blogv1.ListUserPostsResponse{Posts: posts, Total: total, Page: page, TotalPages: totalPages}, nil
+}
+
+// Allowed values for the visual settings document. The document is stored as a
+// single JSONB value in the `settings` table and replaced in full on every save.
+const (
+	themeDark  = "dark"
+	themeWhite = "white"
+
+	toolbarTop  = "top"
+	toolbarDown = "down"
+	toolbarDrag = "drag"
+)
+
+// settingsDoc is the JSON shape stored in the settings.data JSONB column.
+type settingsDoc struct {
+	Theme   string `json:"theme"`
+	Toolbar string `json:"toolbar"`
+}
+
+func defaultSettingsDoc() settingsDoc {
+	return settingsDoc{Theme: themeDark, Toolbar: toolbarTop}
+}
+
+// GetSettings returns the authenticated user's visual settings. When the user
+// has not saved any settings yet, the defaults (dark theme, top toolbar) are
+// returned without persisting a row.
+func (s *Service) GetSettings(ctx context.Context, _ *blogv1.GetSettingsRequest) (*blogv1.GetSettingsResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []byte
+	err = s.pool.QueryRow(ctx, `SELECT data FROM settings WHERE user_id = $1`, u.id).Scan(&data)
+	if errors.Is(err, pgx.ErrNoRows) {
+		doc := defaultSettingsDoc()
+		return &blogv1.GetSettingsResponse{Settings: settingsToProto(doc)}, nil
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load settings: %v", err)
+	}
+
+	doc, err := parseSettingsDoc(data)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to parse settings: %v", err)
+	}
+
+	return &blogv1.GetSettingsResponse{Settings: settingsToProto(doc)}, nil
+}
+
+// UpdateSettings validates and saves the authenticated user's visual settings.
+// The whole document is written to the JSONB column (upsert by user id).
+func (s *Service) UpdateSettings(ctx context.Context, req *blogv1.UpdateSettingsRequest) (*blogv1.UpdateSettingsResponse, error) {
+	u, err := s.requireUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := validateSettings(req.GetSettings())
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.Marshal(doc)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to serialize settings: %v", err)
+	}
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO settings (user_id, data) VALUES ($1, $2)
+		ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()
+	`, u.id, data)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to save settings: %v", err)
+	}
+
+	return &blogv1.UpdateSettingsResponse{Settings: settingsToProto(doc)}, nil
+}
+
+// validateSettings rejects missing or unsupported settings values. It returns
+// the canonical settings document that should be stored.
+func validateSettings(s *blogv1.Settings) (settingsDoc, error) {
+	if s == nil {
+		return settingsDoc{}, status.Error(codes.InvalidArgument, "settings is required")
+	}
+
+	theme := s.GetTheme()
+	if theme != themeDark && theme != themeWhite {
+		return settingsDoc{}, status.Error(codes.InvalidArgument, `theme must be "dark" or "white"`)
+	}
+
+	toolbar := s.GetToolbar()
+	if toolbar != toolbarTop && toolbar != toolbarDown && toolbar != toolbarDrag {
+		return settingsDoc{}, status.Error(codes.InvalidArgument, `toolbar must be "top", "down" or "drag"`)
+	}
+
+	return settingsDoc{Theme: theme, Toolbar: toolbar}, nil
+}
+
+func parseSettingsDoc(data []byte) (settingsDoc, error) {
+	doc := defaultSettingsDoc()
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return settingsDoc{}, err
+	}
+	// Guard against partial/legacy documents.
+	if doc.Theme != themeDark && doc.Theme != themeWhite {
+		doc.Theme = themeDark
+	}
+	if doc.Toolbar != toolbarTop && doc.Toolbar != toolbarDown && doc.Toolbar != toolbarDrag {
+		doc.Toolbar = toolbarTop
+	}
+	return doc, nil
+}
+
+func settingsToProto(doc settingsDoc) *blogv1.Settings {
+	return &blogv1.Settings{Theme: doc.Theme, Toolbar: doc.Toolbar}
 }
 
 type userRecord struct {
